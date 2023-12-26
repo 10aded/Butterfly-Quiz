@@ -1,15 +1,22 @@
-// raylib-zig (c) Nikolas Wipper 2023
+
+
+// TODO: Determine when the mouse is hovering over a button, and register when it is clicked over a button too.
+
 
 const std = @import("std");
 const rl  = @import("raylib");
 
-// We directly copied some pre-existing raylib bindings by github user Not-Nik (et. al) at:
+const dprint = std.debug.print;
+
+// We directly copied some pre-existing raylib bindings by Nikolas Wipper (@github handle Not-Nik) et. al at:
 //
 //     https://github.com/Not-Nik/raylib-zig/
 //
 // We copied commit number 239d3a.
 //
-// Raylib is created by github user Ray (@raysan5) and available at:
+// The linceraylib-zig (c)  2023//
+//
+// Raylib is created by github user Ray (@github handle raysan5) and available at:
 //
 //    https://github.com/raysan5
 //
@@ -45,6 +52,14 @@ pub fn main() anyerror!void {
 
         var screen_width : f32 = initial_screen_width;
         var screen_hidth : f32= initial_screen_hidth;
+
+        // Mouse input processing.
+        const rl_mouse_pos : rl.Vector2 = rl.getMousePosition();
+        const mouse_pos = @Vector(2, f32) { rl_mouse_pos.x / screen_width, rl_mouse_pos.y / screen_hidth};
+
+        dprint("{}\n", .{mouse_pos}); // @debug
+
+        // TODO: Determine when the mouse is hovering over a button, and register when it is clicked over a button too. 
         
         rl.beginDrawing();
 
@@ -76,9 +91,6 @@ pub fn main() anyerror!void {
         draw_centered_rect(button_21, button_width, button_height, rl.Color.gray);
         draw_centered_rect(button_22, button_width, button_height, rl.Color.gray);        
 
-        
-//        const button_centers = [4] @Vector(2, f32) = { button_grid_center[0] - 
-        
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.black);
