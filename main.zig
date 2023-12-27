@@ -6,8 +6,9 @@ const rl  = @import("raylib");
 
 const dprint = std.debug.print;
 
-const RED  = rl.Color.red;
 const GRAY = rl.Color.gray;
+const RED  = rl.Color.red;
+const YELLOW = rl.Color.yellow;
 
 // We directly copied some pre-existing raylib bindings by Nikolas Wipper (@github handle Not-Nik) et. al at:
 //
@@ -47,15 +48,13 @@ pub fn main() anyerror!void {
 
     rl.setTargetFPS(144);
 
+    var mouse_down_last_frame = false;
     
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
 
         var screen_width : f32 = initial_screen_width;
         var screen_hidth : f32= initial_screen_hidth;
-
-
-
 
         // Draw image.
         const image_center = @Vector(2, f32) { 0.5 * screen_width, 0.3 * screen_hidth};
@@ -90,17 +89,29 @@ pub fn main() anyerror!void {
         const rl_mouse_pos : rl.Vector2 = rl.getMousePosition();
         const mouse_pos = @Vector(2, f32) { rl_mouse_pos.x, rl_mouse_pos.y};
 
-        var rectangle_hover = [4] bool { false, false, false, false };
+        var button_hover   = [4] bool { false, false, false, false };
+
+        // Compute hovers.
         for (button_positions, 0..) |pos, i| {
-            rectangle_hover[i] = abs(pos[0] - mouse_pos[0]) <= 0.5 * button_width and abs(pos[1] - mouse_pos[1]) <= 0.5 * button_height;
+            button_hover[i] = abs(pos[0] - mouse_pos[0]) <= 0.5 * button_width and abs(pos[1] - mouse_pos[1]) <= 0.5 * button_height;
         }
 
-        dprint("{any}\n", .{rectangle_hover});
+        // Detect button clicks.
+        var button_clicked = [4] bool { false, false, false, false };
+        const mouse_down = rl.isMouseButtonDown(rl.MouseButton.mouse_button_left);
+        defer mouse_down_last_frame = mouse_down;
+
+        for (0..4) |i| {
+            button_clicked[i] = button_hover[i] and ! mouse_down_last_frame and mouse_down;
+            if ( button_clicked[i] ) {
+                dprint("{s}{d}\n", .{"button clicked:", i}); // @debug
+            }
+        }
         
         rl.beginDrawing();
 
         for (button_positions, 0..) |pos, i| {
-            const button_color = if (rectangle_hover[i]) RED else GRAY;
+            const button_color = if (button_clicked[i]) YELLOW else (if (button_hover[i]) RED else GRAY);
             draw_centered_rect(pos, button_width, button_height, button_color);
         }
 
@@ -115,5 +126,6 @@ pub fn main() anyerror!void {
 
 // TODO: Figure WTF is happening with @abs (and why it's not working!!!)
 fn abs(x : f32) f32 {
+    
     return if (x >= 0) x else -x;
 }
