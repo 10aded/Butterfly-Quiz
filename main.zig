@@ -1,5 +1,3 @@
-
-
 // TODO: Determine when the mouse is hovering over a button, and register when it is clicked over a button too.
 
 
@@ -7,6 +5,9 @@ const std = @import("std");
 const rl  = @import("raylib");
 
 const dprint = std.debug.print;
+
+const RED  = rl.Color.red;
+const GRAY = rl.Color.gray;
 
 // We directly copied some pre-existing raylib bindings by Nikolas Wipper (@github handle Not-Nik) et. al at:
 //
@@ -53,43 +54,55 @@ pub fn main() anyerror!void {
         var screen_width : f32 = initial_screen_width;
         var screen_hidth : f32= initial_screen_hidth;
 
-        // Mouse input processing.
-        const rl_mouse_pos : rl.Vector2 = rl.getMousePosition();
-        const mouse_pos = @Vector(2, f32) { rl_mouse_pos.x / screen_width, rl_mouse_pos.y / screen_hidth};
 
-        dprint("{}\n", .{mouse_pos}); // @debug
 
-        // TODO: Determine when the mouse is hovering over a button, and register when it is clicked over a button too. 
-        
-        rl.beginDrawing();
 
         // Draw image.
         const image_center = @Vector(2, f32) { 0.5 * screen_width, 0.3 * screen_hidth};
         const image_height = 0.4 * screen_hidth;
         
-        draw_centered_rect(image_center, 500, image_height, rl.Color.gray);
+        draw_centered_rect(image_center, 500, image_height, GRAY);
 
-        // Draw text button backgrounds.
+        // Determine button positions.
         const button_grid_center = @Vector(2, f32) { 0.5 * screen_width, 0.75 * screen_hidth };
 
-        const button_11x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
-        const button_11y = button_grid_center[1] - 0.5 * button_vertical_space - 0.5 * button_height;
-        const button_12x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;
-        const button_12y = button_grid_center[1] - 0.5 * button_vertical_space - 0.5 * button_height;
-        const button_21x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
-        const button_21y = button_grid_center[1] + 0.5 * button_vertical_space + 0.5 * button_height;
-        const button_22x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;
-        const button_22y = button_grid_center[1] + 0.5 * button_vertical_space + 0.5 * button_height;        
-
-        const button_11 = @Vector(2, f32){button_11x, button_11y};
-        const button_12 = @Vector(2, f32){button_12x, button_12y};
-        const button_21 = @Vector(2, f32){button_21x, button_21y};
-        const button_22 = @Vector(2, f32){button_22x, button_22y};
+        const tl_button_x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
+        const tr_button_x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;        
+        const bl_button_x = tl_button_x;
+        const br_button_x = tr_button_x;
         
-        draw_centered_rect(button_11, button_width, button_height, rl.Color.gray);
-        draw_centered_rect(button_12, button_width, button_height, rl.Color.gray);
-        draw_centered_rect(button_21, button_width, button_height, rl.Color.gray);
-        draw_centered_rect(button_22, button_width, button_height, rl.Color.gray);        
+        const tl_button_y = button_grid_center[1] - 0.5 * button_vertical_space - 0.5 * button_height;
+        const tr_button_y = tl_button_y;
+        const bl_button_y = button_grid_center[1] + 0.5 * button_vertical_space + 0.5 * button_height;
+        const br_button_y = bl_button_y;
+        
+        const tl_button_pos = @Vector(2, f32){tl_button_x, tl_button_y};
+        const tr_button_pos = @Vector(2, f32){tr_button_x, tr_button_y};
+        const bl_button_pos = @Vector(2, f32){bl_button_x, bl_button_y};
+        const br_button_pos = @Vector(2, f32){br_button_x, br_button_y};
+
+        const button_positions = [4] @Vector(2,f32) { tl_button_pos, 
+                                                      tr_button_pos,
+                                                      bl_button_pos,
+                                                      br_button_pos};
+
+        // Mouse input processing.
+        const rl_mouse_pos : rl.Vector2 = rl.getMousePosition();
+        const mouse_pos = @Vector(2, f32) { rl_mouse_pos.x, rl_mouse_pos.y};
+
+        var rectangle_hover = [4] bool { false, false, false, false };
+        for (button_positions, 0..) |pos, i| {
+            rectangle_hover[i] = abs(pos[0] - mouse_pos[0]) <= 0.5 * button_width and abs(pos[1] - mouse_pos[1]) <= 0.5 * button_height;
+        }
+
+        dprint("{any}\n", .{rectangle_hover});
+        
+        rl.beginDrawing();
+
+        for (button_positions, 0..) |pos, i| {
+            const button_color = if (rectangle_hover[i]) RED else GRAY;
+            draw_centered_rect(pos, button_width, button_height, button_color);
+        }
 
         defer rl.endDrawing();
 
@@ -98,4 +111,9 @@ pub fn main() anyerror!void {
         rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.white);
 
     }
+}
+
+// TODO: Figure WTF is happening with @abs (and why it's not working!!!)
+fn abs(x : f32) f32 {
+    return if (x >= 0) x else -x;
 }
