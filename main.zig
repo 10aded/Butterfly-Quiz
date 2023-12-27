@@ -49,6 +49,20 @@ pub fn main() anyerror!void {
     rl.setTargetFPS(144);
 
     var mouse_down_last_frame = false;
+
+    // Load butterfly image.
+
+    // TODO:
+    // Ludicrously, raylib does not using .jpgs as textures in the intuitive way
+    // (not that they actually tell you this !!!! so we'll need to figure out how to do this.
+    
+    // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found in image-information.txt.
+
+    // TODO: Convert to loading from memory proc.
+    //    const butterfly1 : rl.Image = rl.loadImage("0.jpg");
+    const butterfly1 : rl.Image = rl.loadImage("test2.png");
+
+    const texture1 : rl.Texture2D = rl.loadTextureFromImage(butterfly1);
     
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
@@ -107,6 +121,8 @@ pub fn main() anyerror!void {
                 dprint("{s}{d}\n", .{"button clicked:", i}); // @debug
             }
         }
+
+
         
         rl.beginDrawing();
 
@@ -115,6 +131,10 @@ pub fn main() anyerror!void {
             draw_centered_rect(pos, button_width, button_height, button_color);
         }
 
+        // TODO: Use actual image center instead.
+//        butterfly1.drawImage(
+        rl.drawTexture(texture1, 500, 500, rl.Color.white);
+        
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.black);
