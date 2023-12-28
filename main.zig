@@ -1,6 +1,3 @@
-// TODO: Determine when the mouse is hovering over a button, and register when it is clicked over a button too.
-
-
 const std = @import("std");
 const rl  = @import("raylib");
 
@@ -9,6 +6,7 @@ const dprint = std.debug.print;
 const GRAY = rl.Color.gray;
 const RED  = rl.Color.red;
 const YELLOW = rl.Color.yellow;
+const WHITE  = rl.Color.white;
 
 // We directly copied some pre-existing raylib bindings by Nikolas Wipper (@github handle Not-Nik) et. al at:
 //
@@ -40,10 +38,12 @@ fn draw_centered_rect( pos : @Vector(2, f32), width : f32, height : f32, color :
     rl.drawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
 }
 
+// TODO: Get button text centered, and not using the default raylib font. 
+
 pub fn main() anyerror!void {
 
 
-    rl.initWindow(initial_screen_width, initial_screen_hidth, "raylib-zig [core] example - basic window");
+    rl.initWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
     defer rl.closeWindow();
 
     rl.setTargetFPS(144);
@@ -59,34 +59,21 @@ pub fn main() anyerror!void {
     // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found in image-information.txt.
 
     // TODO: Convert to loading from memory proc.
-    
-    //    const butterfly1 : rl.Image = rl.loadImage("0.jpg");
-    var butterfly1 : rl.Image = rl.loadImage("0.png");
-    
-    // Determine width and height of image...
-    const iwidth  : f32 = @floatFromInt(butterfly1.width);
-    const iheight : f32 = @floatFromInt(butterfly1.height);
 
-    const scaled_width = 500 * iwidth / iheight;
-    
-    // Scale image so that height is 500.
-    
-    rl.imageResize(&butterfly1, @intFromFloat(scaled_width), 500);
-    
-    const texture1 : rl.Texture2D = rl.loadTextureFromImage(butterfly1);
+    // NOTE: NEEDS TO BE .PNG FILE
+    var   butterfly1        : rl.Image     = rl.loadImage("0.png");
+    var   butterfly_texture : rl.Texture2D = rl.loadTextureFromImage(butterfly1);
     
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
 
         var screen_width : f32 = initial_screen_width;
-        var screen_hidth : f32= initial_screen_hidth;
+        var screen_hidth : f32 = initial_screen_hidth;
 
         // Draw image.
         const image_center = @Vector(2, f32) { 0.5 * screen_width, 0.3 * screen_hidth};
         const image_height = 0.4 * screen_hidth;
         
-        draw_centered_rect(image_center, 500, image_height, GRAY);
-
         // Determine button positions.
         const button_grid_center = @Vector(2, f32) { 0.5 * screen_width, 0.75 * screen_hidth };
 
@@ -133,8 +120,6 @@ pub fn main() anyerror!void {
             }
         }
 
-
-        
         rl.beginDrawing();
 
         for (button_positions, 0..) |pos, i| {
@@ -142,9 +127,7 @@ pub fn main() anyerror!void {
             draw_centered_rect(pos, button_width, button_height, button_color);
         }
 
-        // TODO: Use actual image center instead.
-//        butterfly1.drawImage(
-        rl.drawTexture(texture1, 0, 0, rl.Color.white);
+        draw_rect_texture(&butterfly_texture, image_center, image_height);
         
         defer rl.endDrawing();
 
@@ -158,4 +141,19 @@ pub fn main() anyerror!void {
 // In Zig version 0.12, @abs will be available, as of version 0.11 it is not. 
 fn abs(x : f32) f32 {
     return if (x >= 0) x else -x;
+}
+
+// Draw a centered texture of a specified height.
+fn draw_rect_texture(texturep : *rl.Texture2D, center_pos : @Vector(2, f32) , height : f32 ) void {
+    const twidth  : f32  = @floatFromInt(texturep.*.width);
+    const theight : f32  = @floatFromInt(texturep.*.height);
+    
+    const scaling_ratio  = height / theight;
+    
+    const scaled_h  = height;
+    const scaled_w  = scaled_h * twidth / theight;
+    
+    const dumb_rl_tl_vec2 = rl.Vector2.init(center_pos[0] - 0.5 * scaled_w, center_pos[1] - 0.5 * scaled_h);
+    // The 3rd arg (0) is for rotation.
+    rl.drawTextureEx(texturep.*, dumb_rl_tl_vec2, 0, scaling_ratio, WHITE);
 }
