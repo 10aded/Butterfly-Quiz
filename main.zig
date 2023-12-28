@@ -53,15 +53,26 @@ pub fn main() anyerror!void {
     // Load butterfly image.
 
     // TODO:
-    // Ludicrously, raylib does not using .jpgs as textures in the intuitive way
-    // (not that they actually tell you this !!!! so we'll need to figure out how to do this.
-    
+    // Ludicrously, raylib does not using .jpgs as textures in the intuitive way.
+    // (not that they actually tell you this !!!!
+    // As such, every image in this project will be a .png file.
     // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found in image-information.txt.
 
     // TODO: Convert to loading from memory proc.
+    
     //    const butterfly1 : rl.Image = rl.loadImage("0.jpg");
-    const butterfly1 : rl.Image = rl.loadImage("test2.png");
+    var butterfly1 : rl.Image = rl.loadImage("0.png");
+    
+    // Determine width and height of image...
+    const iwidth  : f32 = @floatFromInt(butterfly1.width);
+    const iheight : f32 = @floatFromInt(butterfly1.height);
 
+    const scaled_width = 500 * iwidth / iheight;
+    
+    // Scale image so that height is 500.
+    
+    rl.imageResize(&butterfly1, @intFromFloat(scaled_width), 500);
+    
     const texture1 : rl.Texture2D = rl.loadTextureFromImage(butterfly1);
     
     // Main game loop
@@ -133,7 +144,7 @@ pub fn main() anyerror!void {
 
         // TODO: Use actual image center instead.
 //        butterfly1.drawImage(
-        rl.drawTexture(texture1, 500, 500, rl.Color.white);
+        rl.drawTexture(texture1, 0, 0, rl.Color.white);
         
         defer rl.endDrawing();
 
@@ -144,8 +155,7 @@ pub fn main() anyerror!void {
     }
 }
 
-// TODO: Figure WTF is happening with @abs (and why it's not working!!!)
+// In Zig version 0.12, @abs will be available, as of version 0.11 it is not. 
 fn abs(x : f32) f32 {
-    
     return if (x >= 0) x else -x;
 }
