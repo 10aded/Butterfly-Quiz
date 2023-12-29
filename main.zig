@@ -1,12 +1,13 @@
 const std = @import("std");
-const rl  = @import("raylib");
+const rl  = @cImport(@cInclude("raylib.h"));
 
 const dprint = std.debug.print;
 
-const GRAY = rl.Color.gray;
-const RED  = rl.Color.red;
-const YELLOW = rl.Color.yellow;
-const WHITE  = rl.Color.white;
+const GRAY   = rl.GRAY;
+const RED    = rl.RED;
+const YELLOW = rl.YELLOW;
+const BLACK  = rl.BLACK;
+const WHITE  = rl.WHITE;
 
 // We directly copied some pre-existing raylib bindings by Nikolas Wipper (@github handle Not-Nik) et. al at:
 //
@@ -35,7 +36,7 @@ const button_vertical_space   = 0.1 * initial_screen_hidth;
 fn draw_centered_rect( pos : @Vector(2, f32), width : f32, height : f32, color : rl.Color) void {
     const top_left_x : i32 = @intFromFloat(pos[0] - 0.5 * width);
     const top_left_y : i32 = @intFromFloat(pos[1] - 0.5 * height);
-    rl.drawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
+    rl.DrawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
 }
 
 // TODO: Get button text centered, and not using the default raylib font. 
@@ -43,10 +44,10 @@ fn draw_centered_rect( pos : @Vector(2, f32), width : f32, height : f32, color :
 pub fn main() anyerror!void {
 
 
-    rl.initWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
-    defer rl.closeWindow();
+    rl.InitWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
+    defer rl.CloseWindow();
 
-    rl.setTargetFPS(144);
+    rl.SetTargetFPS(144);
 
     var mouse_down_last_frame = false;
 
@@ -61,11 +62,11 @@ pub fn main() anyerror!void {
     // TODO: Convert to loading from memory proc.
 
     // NOTE: NEEDS TO BE .PNG FILE
-    var   butterfly1        : rl.Image     = rl.loadImage("0.png");
-    var   butterfly_texture : rl.Texture2D = rl.loadTextureFromImage(butterfly1);
+    var   butterfly1        : rl.Image     = rl.LoadImage("0.png");
+    var   butterfly_texture : rl.Texture2D = rl.LoadTextureFromImage(butterfly1);
     
     // Main game loop
-    while (!rl.windowShouldClose()) { // Detect window close button or ESC key
+    while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
 
         var screen_width : f32 = initial_screen_width;
         var screen_hidth : f32 = initial_screen_hidth;
@@ -98,7 +99,7 @@ pub fn main() anyerror!void {
                                                       br_button_pos};
 
         // Mouse input processing.
-        const rl_mouse_pos : rl.Vector2 = rl.getMousePosition();
+        const rl_mouse_pos : rl.Vector2 = rl.GetMousePosition();
         const mouse_pos = @Vector(2, f32) { rl_mouse_pos.x, rl_mouse_pos.y};
 
         var button_hover   = [4] bool { false, false, false, false };
@@ -110,7 +111,7 @@ pub fn main() anyerror!void {
 
         // Detect button clicks.
         var button_clicked = [4] bool { false, false, false, false };
-        const mouse_down = rl.isMouseButtonDown(rl.MouseButton.mouse_button_left);
+        const mouse_down = rl.IsMouseButtonDown(rl.MOUSE_BUTTON_LEFT);
         defer mouse_down_last_frame = mouse_down;
 
         for (0..4) |i| {
@@ -120,7 +121,7 @@ pub fn main() anyerror!void {
             }
         }
 
-        rl.beginDrawing();
+        rl.BeginDrawing();
 
         for (button_positions, 0..) |pos, i| {
             const button_color = if (button_clicked[i]) YELLOW else (if (button_hover[i]) RED else GRAY);
@@ -129,11 +130,11 @@ pub fn main() anyerror!void {
 
         draw_rect_texture(&butterfly_texture, image_center, image_height);
         
-        defer rl.endDrawing();
+        defer rl.EndDrawing();
 
-        rl.clearBackground(rl.Color.black);
+        rl.ClearBackground(BLACK);
 
-        rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.white);
+        rl.DrawText("Congrats! You created your first window!", 190, 200, 20, WHITE);
 
     }
 }
@@ -153,7 +154,10 @@ fn draw_rect_texture(texturep : *rl.Texture2D, center_pos : @Vector(2, f32) , he
     const scaled_h  = height;
     const scaled_w  = scaled_h * twidth / theight;
     
-    const dumb_rl_tl_vec2 = rl.Vector2.init(center_pos[0] - 0.5 * scaled_w, center_pos[1] - 0.5 * scaled_h);
+    const dumb_rl_tl_vec2 = rl.Vector2{
+        .x = center_pos[0] - 0.5 * scaled_w,
+        .y = center_pos[1] - 0.5 * scaled_h,
+    };
     // The 3rd arg (0) is for rotation.
-    rl.drawTextureEx(texturep.*, dumb_rl_tl_vec2, 0, scaling_ratio, WHITE);
+    rl.DrawTextureEx(texturep.*, dumb_rl_tl_vec2, 0, scaling_ratio, WHITE);
 }

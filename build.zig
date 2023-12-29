@@ -1,21 +1,32 @@
-const std = @import("std");
-const rl = @import("raylib-zig/build.zig");
+const std    = @import("std");
+const raySdk = @import("raylib/src/build.zig");
 
-pub fn build(b: *std.Build) !void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-    var raylib = rl.getModule(b, "raylib-zig");
-    var raylib_math = rl.math.getModule(b, "raylib-zig");
+pub fn build(b: *std.Build) void {
+	const target = b.standardTargetOptions(.{});
 
-    const exe = b.addExecutable(.{ .name = "butterfly-quiz", .root_source_file = .{ .path = "main.zig" }, .optimize = optimize, .target = target });
+	const optimize = b.standardOptimizeOption(.{});
 
-    rl.link(b, exe, target, optimize);
-    exe.addModule("raylib", raylib);
-    exe.addModule("raylib-math", raylib_math);
+	const exe = b.addExecutable(.{
+		.name = "zig-raylib",
+		.root_source_file = .{ .path = "main.zig" },
+		.target = target,
+		.optimize = optimize,
+	});
 
-    const run_cmd = b.addRunArtifact(exe);
-    const run_step = b.step("run", "Run Quiz");
-    run_step.dependOn(&run_cmd.step);
+	b.installArtifact(exe);
 
-    b.installArtifact(exe);
+	var raylib = raySdk.addRaylib(b, target, optimize, .{});
+	exe.addIncludePath(.{ .path = "raylib/src" });
+	exe.linkLibrary(raylib);
+
+	const run_cmd = b.addRunArtifact(exe);
+
+	run_cmd.step.dependOn(b.getInstallStep());
+
+	if (b.args) |args| {
+		run_cmd.addArgs(args);
+	}
+
+	const run_step = b.step("run", "run the quiz");
+	run_step.dependOn(&run_cmd.step);
 }
