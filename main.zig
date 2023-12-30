@@ -1,16 +1,6 @@
 const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
 
-const dprint = std.debug.print;
-
-const Vec2   = @Vector(2, f32);
-
-const GRAY   = rl.GRAY;
-const RED    = rl.RED;
-const YELLOW = rl.YELLOW;
-const BLACK  = rl.BLACK;
-const WHITE  = rl.WHITE;
-
 // We directly included a copy of raylib into our project.
 //
 // We copied commit number 710e81.
@@ -21,6 +11,35 @@ const WHITE  = rl.WHITE;
 //
 // See the pages above for full license details.
 
+
+const dprint = std.debug.print;
+
+const Vec2   = @Vector(2, f32);
+
+
+// Colors
+const RED    = rl.RED;
+const YELLOW = rl.YELLOW;
+const GOLD   = rl.GOLD;
+
+const BLACK     = rl.BLACK;
+const DARKGRAY  = rl.DARKGRAY;
+const GRAY      = rl.GRAY;
+const LIGHTGRAY = rl.LIGHTGRAY;
+const WHITE     = rl.WHITE;
+
+// UI Colors
+const background_color    = DARKGRAY;
+const button_border_color = BLACK;
+const button_fill_color   = LIGHTGRAY;
+const button_hover_color  = YELLOW;
+    
+const text_color          = GOLD;
+
+// UI Sizes
+const border_thickness    = 5;
+
+// Screen defaults.
 const initial_screen_width  = 1920;
 const initial_screen_hidth  = 1080;
 const initial_screen_center = Vec2{ 0.5 * initial_screen_width, 0.5 * initial_screen_hidth};
@@ -37,10 +56,12 @@ fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) 
     rl.DrawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
 }
 
-// TODO: Get button text centered, and not using the default raylib font. 
+// TODO:
+// * Add border to image.
+// * Load images from memory via LoadImageFromMemory.
+// * Begin on logic re correct option selection.
 
 pub fn main() anyerror!void {
-
 
     rl.InitWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
     defer rl.CloseWindow();
@@ -60,10 +81,8 @@ pub fn main() anyerror!void {
     // As such, every image in this project will be a .png file.
     // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found in image-information.txt.
 
-    // TODO: Convert to loading from memory proc.
-
     // NOTE: NEEDS TO BE .PNG FILE
-    var   butterfly1        : rl.Image     = rl.LoadImage("1.png");
+    var   butterfly1        : rl.Image     = rl.LoadImage("Photos/1.png");
     var   butterfly_texture : rl.Texture2D = rl.LoadTextureFromImage(butterfly1);
     
     // Main game loop
@@ -124,10 +143,18 @@ pub fn main() anyerror!void {
 
         rl.BeginDrawing();
 
+        rl.ClearBackground(DARKGRAY);
+
         // Draw button colors.
         for (button_positions, 0..) |pos, i| {
-            const button_color = if (button_clicked[i]) YELLOW else (if (button_hover[i]) RED else GRAY);
-            draw_centered_rect(pos, button_width, button_height, button_color);
+            var button_interior_color = button_fill_color;
+            if (button_hover[i]) {
+                button_interior_color = button_hover_color;
+            }
+            draw_centered_rect(pos, button_width, button_height, button_border_color);
+            const button_fill_width  = @max(0, button_width  - 2 * border_thickness);
+            const button_fill_height = @max(0, button_height - 2 * border_thickness);
+            draw_centered_rect(pos, button_fill_width, button_fill_height, button_interior_color);
         }
 
         // Draw button text.
@@ -135,15 +162,12 @@ pub fn main() anyerror!void {
         const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
         
         for (button_positions, 0..) |pos, i| {
-            draw_text(button_text[i], pos, 100, YELLOW, georgia_font);
+            draw_text(button_text[i], pos, 50, BLACK, georgia_font);
         }
   
         draw_rect_texture(&butterfly_texture, image_center, image_height);
         
         defer rl.EndDrawing();
-
-        rl.ClearBackground(BLACK);
-
 
 
     }
