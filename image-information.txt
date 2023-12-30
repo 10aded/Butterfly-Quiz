@@ -1,2 +1,3 @@
 // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found below.
-0.jpg : https://commons.wikimedia.org/wiki/File:Cloudless_sulphur_(Phoebis_sennae_sennae)_female_underside.jpg, Charles J. Sharp, CC BY-SA 4.0
+0.png : https://commons.wikimedia.org/wiki/File:Cloudless_sulphur_(Phoebis_sennae_sennae)_female_underside.jpg; Charles J. Sharp; CC BY-SA 4.0
+1.png : https://commons.wikimedia.org/wiki/File:Cherry_blossoms_Lake_Balboa_(20140330-0239).jpg; Nandaro; CC BY-SA 3.0 
