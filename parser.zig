@@ -4,7 +4,6 @@ const dprint = std.debug.print;
 
 const test_input = @embedFile("test.txt");
 
-
 const PhotoInfo = struct{
     filename    : [] const u8,
     animal_name : [] const u8,
@@ -14,47 +13,33 @@ const PhotoInfo = struct{
 };
 
 
-pub fn main() !void {
-//    var   temp_buffer : [100] u8 = undefined;
-//    var test_fba = std.heap.FixedBufferAllocator.init(&temp_buffer);
-//    const test_alloc = test_fba.allocator();
+const NUMBER_OF_LINES = std.mem.count(u8, test_input, "\n");
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const ally = arena.allocator();
+const photo_info_array = parse_input();
 
+fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
 
-    var photo_info_array = std.ArrayList(PhotoInfo).init(ally);
+    var   result : [NUMBER_OF_LINES] PhotoInfo = undefined;
+    var photo_info_index = 0;
     
-    var line_list = std.ArrayList([] const u8).init(ally);
-    defer line_list.deinit();
-
-    // NOTE: The \r is needed for windows newlines!!!
+    // NOTE: The \r is needed for windows newlines!!!    
     var line_iter = std.mem.tokenizeAny(u8, test_input, "\r\n");
-    while (line_iter.next()) |line| {
-        dprint("DEBUG LINE: {s}\n", .{line}); // @debug
-
-        var field_list = std.ArrayList([] const u8).init(ally);
-        defer field_list.deinit();
+    while (line_iter.next()) |line| : (photo_info_index += 1){ 
 
         var field_iter = std.mem.tokenizeAny(u8, line, ",");
-
-        while (field_iter.next()) |field| {
-            try field_list.append(field);            
-        }
         
-        dprint("DEBUG: FIELD LIST:{s}\n", .{field_list.items}); // @debug
-
-        const photo_info_item = PhotoInfo{
-            .filename    = field_list.items[0],
-            .animal_name = field_list.items[1],
-            .url         = field_list.items[2],
-            .author      = field_list.items[3],
-            .license     = field_list.items[4],
+        result[photo_info_index]  = PhotoInfo{
+            .filename    = field_iter.next().?,
+            .animal_name = field_iter.next().?,
+            .url         = field_iter.next().?,
+            .author      = field_iter.next().?,
+            .license     = field_iter.next().?,
         };
 
-        try photo_info_array.append(photo_info_item);
     }
-
-    dprint("{any}\n", .{photo_info_array.items});
+    return result;
 }
 
+pub fn main() !void {
+    dprint("{any}\n", .{photo_info_array});
+}
