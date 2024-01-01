@@ -45,7 +45,7 @@ const initial_screen_hidth  = 1080;
 const initial_screen_center = Vec2{ 0.5 * initial_screen_width, 0.5 * initial_screen_hidth};
 
 // Button spaces.
-const button_width  = 0.3 * initial_screen_width;
+const button_width  = 0.4 * initial_screen_width;
 const button_height = 0.1 * initial_screen_hidth;
 const button_horizontal_space = 0.1 * initial_screen_width;
 const button_vertical_space   = 0.1 * initial_screen_hidth; 
@@ -56,6 +56,72 @@ fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) 
     rl.DrawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
 }
 
+const photo_information_txt = @embedFile("image-information.txt");
+
+const PhotoInfo = struct{
+    filename        : [] const u8,
+    common_name     : [] const u8,
+    scientific_name : [] const u8,
+    url             : [] const u8,
+    author          : [] const u8,
+    licence         : [] const u8,
+    licence_link    : [] const u8,
+};
+
+
+
+// The proc below is probably not needed if instead
+//    std.mem.count(u8, photo_information_txt, "\n");
+// is called, but likely @setEvalBranchQuota(<num>) will need to have <num> set to 10,000
+// (or something larger).
+
+//const NUMBER_OF_LINES = std.mem.count(u8, photo_information_txt, "\n");
+
+const NUMBER_OF_LINES = count_lines();
+
+fn count_lines() usize {
+    var count : usize = 0;
+    for (photo_information_txt) |char| {
+        if (char == '\n') {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+
+// Huge thanks to tw0st3p for carrying me through this part on stream!
+
+const photo_info_array = parse_input();
+
+fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
+    @setEvalBranchQuota(10_000);
+
+//    @compileLog(NUMBER_OF_LINES);
+    var   result : [NUMBER_OF_LINES] PhotoInfo = undefined;
+    var photo_info_index = 0;
+    
+    // NOTE: The \r is needed for windows newlines!!!    
+    var line_iter = std.mem.tokenizeAny(u8, photo_information_txt, "\r\n");
+    while (line_iter.next()) |line| : (photo_info_index += 1){ 
+
+        var field_iter = std.mem.tokenizeAny(u8, line, ";");
+        // May need @compileLog()
+//        @compileLog(line);
+        result[photo_info_index]  = PhotoInfo{
+            .filename        = field_iter.next().? ++ "\x00",
+            .common_name     = field_iter.next().? ++ "\x00",
+            .scientific_name = field_iter.next().? ++ "\x00",
+            .url             = field_iter.next().? ++ "\x00",
+            .author          = field_iter.next().? ++ "\x00",
+            .licence         = field_iter.next().? ++ "\x00",
+            .licence_link    = field_iter.next().? ++ "\x00",
+        };
+//        @compileLog(result[photo_info_index]);
+    }
+    return result;
+}
+
 // TODO:
 // * Add border to image.
 // * Load images from memory via LoadImageFromMemory.
@@ -63,6 +129,9 @@ fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) 
 
 pub fn main() anyerror!void {
 
+//    dprint("Number of lines: {}\n", .{NUMBER_OF_LINES}); // @debug
+    dprint("{any}\n", .{photo_info_array}); // @debug
+    
     rl.InitWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
     defer rl.CloseWindow();
 
@@ -159,7 +228,11 @@ pub fn main() anyerror!void {
 
         // Draw button text.
 
-        const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
+        var   button_text : [4] [] const u8 = undefined;
+        for (0..4) |i| {
+            button_text[i] = photo_info_array[i].common_name;
+        }
+//        const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
         
         for (button_positions, 0..) |pos, i| {
             draw_text(button_text[i], pos, 50, BLACK, georgia_font);
