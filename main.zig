@@ -12,10 +12,37 @@ const rl  = @cImport(@cInclude("raylib.h"));
 // See the pages above for full license details.
 
 
+// TODO:
+// - Add in detailed README about project, especially about photo licenses.
+// - Get logic / next screen working.
+// - Randomize incorrect name options.
+// suggestion: use std.rand.Random.shuffle()
+// See https://zigbin.io/56ecb3
+// - Randomize photo selection order.
+
 const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
 
+// All of the animal names / photo author / photo location is in image-information.txt
+// We process this at compile for use in the project.
+// While image-information.txt is a ; - delimited .csv file, instead of processing
+// it with some .csv library, we just tokenize over ";" and put the entries into
+// photo_info_array.
+
+const photo_information_txt = @embedFile("image-information.txt");
+
+const PhotoInfo = struct{
+    filename        : [] const u8,
+    common_name     : [] const u8,
+    scientific_name : [] const u8,
+    url             : [] const u8,
+    author          : [] const u8,
+    licence         : [] const u8,
+    licence_link    : [] const u8,
+};
+
+const photo_info_array = parse_input();
 
 // Colors
 const RED    = rl.RED;
@@ -50,47 +77,23 @@ const button_height = 0.1 * initial_screen_hidth;
 const button_horizontal_space = 0.1 * initial_screen_width;
 const button_vertical_space   = 0.1 * initial_screen_hidth; 
 
-
-
-const photo_information_txt = @embedFile("image-information.txt");
-
-const PhotoInfo = struct{
-    filename        : [] const u8,
-    common_name     : [] const u8,
-    scientific_name : [] const u8,
-    url             : [] const u8,
-    author          : [] const u8,
-    licence         : [] const u8,
-    licence_link    : [] const u8,
-};
-
-
-// Helpful note (thanks tw0st3p) (again!)
-// dupeZ in mem/Allocator.zig duplicates memory but adds a 0 byte on the end of it.
-
-
-// The proc below is probably not needed if instead
-//    std.mem.count(u8, photo_information_txt, "\n");
-// is called, but likely @setEvalBranchQuota(<num>) will need to have <num> set to 10,000
-// (or something larger).
-
-//const NUMBER_OF_LINES = std.mem.count(u8, photo_information_txt, "\n");
+// Helpful notes (thanks tw0st3p) (again!)
+// * dupeZ in mem/Allocator.zig duplicates memory but adds a 0 byte on the end of it.
+// * @setEvalBranchQuota(<num>) may need to be set for large comptime loops.
+//   The standard zig documentation has examples about this.
 
 const NUMBER_OF_LINES = count_lines();
 
 fn count_lines() usize {
     var count : usize = 0;
     for (photo_information_txt) |char| {
-        if (char == '\n') {
-            count += 1;
-        }
+        if (char == '\n') count += 1;
     }
     return count;
 }
 
+// The comptime function we use to process "image-information.txt".
 // Huge thanks to tw0st3p for carrying me through this part on stream!
-
-const photo_info_array = parse_input();
 
 fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
     @setEvalBranchQuota(10_000);
@@ -119,10 +122,6 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
     }
     return result;
 }
-
-// TODO:
-// * Load images from memory via LoadImageFromMemory.
-// * Begin on logic re correct option selection.
 
 pub fn main() anyerror!void {
 
