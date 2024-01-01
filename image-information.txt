@@ -1,4 +1,4 @@
-"0.png";Cloudless sulphur;Phoebis sennae;https://commons.wikimedia.org/wiki/File:Cloudless_sulphur_(Phoebis_sennae_sennae)_female_underside.jpg;Charles J. Sharp;CC BY-SA 4.0;https://creativecommons.org/licenses/by-sa/4.0/deed.en
-"1.png";Western tiger swallowtail;Papilio rutulus;https://commons.wikimedia.org/wiki/File:Cherry_blossoms_Lake_Balboa_(20140330-0239).jpg;Nandaro;CC BY-SA 3.0;https://creativecommons.org/licenses/by-sa/3.0/deed.en
-"2.png";Chalcedon checkerspot;Euphydryas chalcedona;https://commons.wikimedia.org/wiki/File:Euphydryas_chalcedona_chalcedona-Male-5.jpg;Eugene Zelenko;CC BY-SA 4.0;https://creativecommons.org/licenses/by-sa/4.0/
-"3.png";Little wood satyr;Megisto cymela;https://commons.wikimedia.org/wiki/File:Little_Wood_Satyr_(Megisto_cymela)_(5807711699).jpg;khteWisconsin;PDM 1.0;https://creativecommons.org/publicdomain/mark/1.0/
+0.png;Cloudless sulphur;Phoebis sennae;https://commons.wikimedia.org/wiki/File:Cloudless_sulphur_(Phoebis_sennae_sennae)_female_underside.jpg;Charles J. Sharp;CC BY-SA 4.0;https://creativecommons.org/licenses/by-sa/4.0/deed.en
+1.png;Western tiger swallowtail;Papilio rutulus;https://commons.wikimedia.org/wiki/File:Cherry_blossoms_Lake_Balboa_(20140330-0239).jpg;Nandaro;CC BY-SA 3.0;https://creativecommons.org/licenses/by-sa/3.0/deed.en
+2.png;Chalcedon checkerspot;Euphydryas chalcedona;https://commons.wikimedia.org/wiki/File:Euphydryas_chalcedona_chalcedona-Male-5.jpg;Eugene Zelenko;CC BY-SA 4.0;https://creativecommons.org/licenses/by-sa/4.0/
+3.png;Little wood satyr;Megisto cymela;https://commons.wikimedia.org/wiki/File:Little_Wood_Satyr_(Megisto_cymela)_(5807711699).jpg;khteWisconsin;PDM 1.0;https://creativecommons.org/publicdomain/mark/1.0/

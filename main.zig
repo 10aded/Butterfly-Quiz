@@ -50,11 +50,7 @@ const button_height = 0.1 * initial_screen_hidth;
 const button_horizontal_space = 0.1 * initial_screen_width;
 const button_vertical_space   = 0.1 * initial_screen_hidth; 
 
-fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) void {
-    const top_left_x : i32 = @intFromFloat(pos[0] - 0.5 * width);
-    const top_left_y : i32 = @intFromFloat(pos[1] - 0.5 * height);
-    rl.DrawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
-}
+
 
 const photo_information_txt = @embedFile("image-information.txt");
 
@@ -68,6 +64,9 @@ const PhotoInfo = struct{
     licence_link    : [] const u8,
 };
 
+
+// Helpful note (thanks tw0st3p) (again!)
+// dupeZ in mem/Allocator.zig duplicates memory but adds a 0 byte on the end of it.
 
 
 // The proc below is probably not needed if instead
@@ -88,7 +87,6 @@ fn count_lines() usize {
     }
     return count;
 }
-
 
 // Huge thanks to tw0st3p for carrying me through this part on stream!
 
@@ -123,7 +121,6 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
 }
 
 // TODO:
-// * Add border to image.
 // * Load images from memory via LoadImageFromMemory.
 // * Begin on logic re correct option selection.
 
@@ -150,9 +147,16 @@ pub fn main() anyerror!void {
     // As such, every image in this project will be a .png file.
     // All of the photos in this project have either been released to the public domain or have a creative commons license; their authors, and a link to the original work and license can be found in image-information.txt.
 
-    // NOTE: NEEDS TO BE .PNG FILE
-    var   butterfly1        : rl.Image     = rl.LoadImage("Photos/1.png");
-    var   butterfly_texture : rl.Texture2D = rl.LoadTextureFromImage(butterfly1);
+    // NOTE: Loading .jps caused fails, so the convention is that all images are .png files.
+
+    var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
+    var   photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
+
+    // @cleanup: The image array may not be needed... so take it out if this is the case.
+    inline for (0..NUMBER_OF_LINES) |i| {
+        photo_image_array[i]   = rl.LoadImage("Photos/" ++ photo_info_array[i].filename);
+        photo_texture_array[i] = rl.LoadTextureFromImage(photo_image_array[i]);
+    }
     
     // Main game loop
     while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
@@ -237,8 +241,10 @@ pub fn main() anyerror!void {
         for (button_positions, 0..) |pos, i| {
             draw_text(button_text[i], pos, 50, BLACK, georgia_font);
         }
-  
-        draw_rect_texture(&butterfly_texture, image_center, image_height);
+
+        // Draw image (and a border for it).
+        
+        draw_bordered_texture(&photo_texture_array[0], image_center, image_height, BLACK);
         
         defer rl.EndDrawing();
 
@@ -269,7 +275,7 @@ fn draw_text( str : [] const u8, pos : Vec2, height : f32, color : rl.Color, fon
 
 
 // Draw a centered texture of a specified height.
-fn draw_rect_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32 ) void {
+fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32, border_color : rl.Color ) void {
     const twidth  : f32  = @floatFromInt(texturep.*.width);
     const theight : f32  = @floatFromInt(texturep.*.height);
     
@@ -283,5 +289,12 @@ fn draw_rect_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32 
         .y = center_pos[1] - 0.5 * scaled_h,
     };
     // The 3rd arg (0) is for rotation.
+    draw_centered_rect(center_pos, scaled_w + 2 * border_thickness, height + 2 * border_thickness, border_color);
     rl.DrawTextureEx(texturep.*, dumb_rl_tl_vec2, 0, scaling_ratio, WHITE);
+}
+
+fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) void {
+    const top_left_x : i32 = @intFromFloat(pos[0] - 0.5 * width);
+    const top_left_y : i32 = @intFromFloat(pos[1] - 0.5 * height);
+    rl.DrawRectangle(top_left_x, top_left_y, @intFromFloat(width), @intFromFloat(height), color);
 }
