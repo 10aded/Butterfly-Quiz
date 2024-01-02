@@ -139,6 +139,12 @@ pub fn main() anyerror!void {
 
     //    dprint("Number of lines: {}\n", .{NUMBER_OF_LINES}); // @debug
     dprint("{any}\n", .{photo_info_array}); // @debug
+
+    // Set up RNG.
+//    const RndGen = std.rand.DefaultPrng;
+    const seed   = std.time.milliTimestamp();
+    var   prng   = std.rand.DefaultPrng.init(@intCast(seed));
+    const random = prng.random();
     
     rl.InitWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
     defer rl.CloseWindow();
@@ -244,9 +250,17 @@ pub fn main() anyerror!void {
         if ( button_clicked and current_text_options[button_clicked_index] == current_photo_index ) {
             // Correct option selected, so do updates.
             dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index});
-            // TODO: Randomize this!
-            current_photo_index += 1;
-            current_photo_index %= 4;
+
+            // Select a random int from 0..<NUMBER_OF_LINES,
+            // until a different int than current_photo_index has been chosen.
+            var new_photo_index = current_photo_index;
+            while (new_photo_index == current_photo_index) {
+                new_photo_index = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+            }
+
+            current_photo_index = new_photo_index;
+            // TODO: Randomize the possible incorrect options.
+
             const temp = current_text_options[0];
             for (0..3) |i| {
                 current_text_options[i] = current_text_options[i + 1];
