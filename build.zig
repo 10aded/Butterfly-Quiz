@@ -1,5 +1,8 @@
 const std    = @import("std");
 const raySdk = @import("raylib/src/build.zig");
+// If imports in higher directories fail, try:
+// exe.main_mod_path = ".";
+
 
 pub fn build(b: *std.Build) void {
 	const target = b.standardTargetOptions(.{});

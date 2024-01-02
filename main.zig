@@ -43,11 +43,6 @@ fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
     return result;
 }
 
-// const photo_0 : [:0] const u8 = @embedFile("Photos/0.png");
-// const photo_1 = @embedFile("Photos/1.png");
-// const photo_2 = @embedFile("Photos/2.png");
-// const photo_3 = @embedFile("Photos/3.png");
-
 const PhotoInfo = struct{
     filename        : [:0] const u8,
     common_name     : [:0] const u8,
@@ -165,22 +160,6 @@ pub fn main() anyerror!void {
 
     // NOTE: Loading .jps caused fails, so the convention is that all images are .png files.
 
-    //    var   photo_image_array   : [1] rl.Image     = undefined;
-    //    var   photo_texture_array : [1] rl.Texture2D = undefined;
-
-    // @cleanup: The image array may not be needed... so take it out if this is the case.
-    // TODO: Figure out how to do this with loops...
-
-    //    photo_image_array[0]   = rl.LoadImageFromMemory(".png", photo_0, photo_0.len);
-    //    photo_texture_array[0] = rl.LoadTextureFromImage(photo_image_array[0]);
-
-    //    inline for (0..NUMBER_OF_LINES) |i| {
-    //        photo_image_array[i]   = rl.LoadImageFromMemory(".png", ***embedded files***, ***embeded***.len);
-    //        photo_image_array[i]   = rl.LoadImage("Photos/" ++ photo_info_array[i].filename);
-
-    //    }
-
-
     var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
     var   photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
 
@@ -189,6 +168,11 @@ pub fn main() anyerror!void {
         photo_texture_array[i] = rl.LoadTextureFromImage(photo_image_array[i]);
 
     }
+
+
+    var current_photo_index  : u32 = 0;
+
+    var current_text_options = [4] u32{0, 1, 2, 3};
     
     // Main game loop
     while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
@@ -198,10 +182,10 @@ pub fn main() anyerror!void {
 
         // Draw image.
         const image_center = Vec2 { 0.5 * screen_width, 0.3 * screen_hidth};
-        const image_height = 0.4 * screen_hidth;
+        const image_height = 0.5 * screen_hidth;
         
         // Determine button positions.
-        const button_grid_center = Vec2 { 0.5 * screen_width, 0.75 * screen_hidth };
+        const button_grid_center = Vec2 { 0.5 * screen_width, 0.8 * screen_hidth };
 
         const tl_button_x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
         const tr_button_x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;        
@@ -235,17 +219,41 @@ pub fn main() anyerror!void {
         }
 
         // Detect button clicks.
-        var button_clicked = [4] bool { false, false, false, false };
         const mouse_down = rl.IsMouseButtonDown(rl.MOUSE_BUTTON_LEFT);
         defer mouse_down_last_frame = mouse_down;
 
+        var button_clicked = false;
+        var button_clicked_index : usize = 0;
         for (0..4) |i| {
-            button_clicked[i] = button_hover[i] and ! mouse_down_last_frame and mouse_down;
-            if ( button_clicked[i] ) {
-                dprint("{s}{d}\n", .{"button clicked:", i}); // @debug
+            if (button_hover[i] and ! mouse_down_last_frame and mouse_down) {
+                button_clicked       = true;
+                button_clicked_index = i;
+                break;
             }
         }
 
+        if ( button_clicked ) {
+            dprint("{s}{d}\n", .{"button clicked:", button_clicked_index}); // @debug
+        }
+        
+        // Detect if the correct button was pressed.
+        // If so, update current_photo_index and current_text_options.
+        // Otherwise (TODO): fade text / color on incorrect button choice
+        // (if a button was pressed).
+
+        if ( button_clicked and current_text_options[button_clicked_index] == current_photo_index ) {
+            // Correct option selected, so do updates.
+            dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index});
+            // TODO: Randomize this!
+            current_photo_index += 1;
+            current_photo_index %= 4;
+            const temp = current_text_options[0];
+            for (0..3) |i| {
+                current_text_options[i] = current_text_options[i + 1];
+            }
+            current_text_options[3] = temp;
+        }
+        
         rl.BeginDrawing();
 
         rl.ClearBackground(DARKGRAY);
@@ -264,22 +272,23 @@ pub fn main() anyerror!void {
 
         // Draw button text.
 
-        var   button_text : [4] [] const u8 = undefined;
-        for (0..4) |i| {
-            button_text[i] = photo_info_array[i].common_name;
-        }
+        // var   button_text : [4] [] const u8 = undefined;
+        // for (0..4) |i| {
+            
+        //     button_text[i] = photo_info_array[i].common_name;
+        // }
         //        const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
         
-        for (button_positions, 0..) |pos, i| {
-            draw_text(button_text[i], pos, 50, BLACK, georgia_font);
+        for (current_text_options, 0..) |opt_i, i| {
+            const pos = button_positions[i];
+            draw_text(photo_info_array[opt_i].common_name, pos, 50, BLACK, georgia_font);
         }
 
         // Draw image (and a border for it).
         
-        draw_bordered_texture(&photo_texture_array[0], image_center, image_height, BLACK);
+        draw_bordered_texture(&photo_texture_array[current_photo_index], image_center, image_height, BLACK);
         
         defer rl.EndDrawing();
-
 
     }
 }
