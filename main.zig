@@ -32,14 +32,30 @@ const Vec2   = @Vector(2, f32);
 
 const photo_information_txt = @embedFile("image-information.txt");
 
+const embedded_photo_array = embed_photos();
+
+fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
+    var result : [NUMBER_OF_LINES] [:0] const u8 = undefined;
+    for (0..NUMBER_OF_LINES) |i| {
+        const str_i = std.fmt.comptimePrint("{}", .{i});
+        result[i] = @embedFile("Photos/" ++ str_i ++ ".png");
+    }
+    return result;
+}
+
+// const photo_0 : [:0] const u8 = @embedFile("Photos/0.png");
+// const photo_1 = @embedFile("Photos/1.png");
+// const photo_2 = @embedFile("Photos/2.png");
+// const photo_3 = @embedFile("Photos/3.png");
+
 const PhotoInfo = struct{
-    filename        : [] const u8,
-    common_name     : [] const u8,
-    scientific_name : [] const u8,
-    url             : [] const u8,
-    author          : [] const u8,
-    licence         : [] const u8,
-    licence_link    : [] const u8,
+    filename        : [:0] const u8,
+    common_name     : [:0] const u8,
+    scientific_name : [:0] const u8,
+    url             : [:0] const u8,
+    author          : [:0] const u8,
+    licence         : [:0] const u8,
+    licence_link    : [:0] const u8,
 };
 
 const photo_info_array = parse_input();
@@ -60,7 +76,7 @@ const background_color    = DARKGRAY;
 const button_border_color = BLACK;
 const button_fill_color   = LIGHTGRAY;
 const button_hover_color  = YELLOW;
-    
+
 const text_color          = GOLD;
 
 // UI Sizes
@@ -98,17 +114,18 @@ fn count_lines() usize {
 fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
     @setEvalBranchQuota(10_000);
 
-//    @compileLog(NUMBER_OF_LINES);
+    //    @compileLog(NUMBER_OF_LINES);
     var   result : [NUMBER_OF_LINES] PhotoInfo = undefined;
     var photo_info_index = 0;
     
     // NOTE: The \r is needed for windows newlines!!!    
     var line_iter = std.mem.tokenizeAny(u8, photo_information_txt, "\r\n");
     while (line_iter.next()) |line| : (photo_info_index += 1){ 
-
         var field_iter = std.mem.tokenizeAny(u8, line, ";");
+        defer std.debug.assert(field_iter.next() == null);
+
         // May need @compileLog()
-//        @compileLog(line);
+        //        @compileLog(line);
         result[photo_info_index]  = PhotoInfo{
             .filename        = field_iter.next().? ++ "\x00",
             .common_name     = field_iter.next().? ++ "\x00",
@@ -118,14 +135,14 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
             .licence         = field_iter.next().? ++ "\x00",
             .licence_link    = field_iter.next().? ++ "\x00",
         };
-//        @compileLog(result[photo_info_index]);
+        //        @compileLog(result[photo_info_index]);
     }
     return result;
 }
 
 pub fn main() anyerror!void {
 
-//    dprint("Number of lines: {}\n", .{NUMBER_OF_LINES}); // @debug
+    //    dprint("Number of lines: {}\n", .{NUMBER_OF_LINES}); // @debug
     dprint("{any}\n", .{photo_info_array}); // @debug
     
     rl.InitWindow(initial_screen_width, initial_screen_hidth, "Butterfly Quiz");
@@ -148,13 +165,29 @@ pub fn main() anyerror!void {
 
     // NOTE: Loading .jps caused fails, so the convention is that all images are .png files.
 
+    //    var   photo_image_array   : [1] rl.Image     = undefined;
+    //    var   photo_texture_array : [1] rl.Texture2D = undefined;
+
+    // @cleanup: The image array may not be needed... so take it out if this is the case.
+    // TODO: Figure out how to do this with loops...
+
+    //    photo_image_array[0]   = rl.LoadImageFromMemory(".png", photo_0, photo_0.len);
+    //    photo_texture_array[0] = rl.LoadTextureFromImage(photo_image_array[0]);
+
+    //    inline for (0..NUMBER_OF_LINES) |i| {
+    //        photo_image_array[i]   = rl.LoadImageFromMemory(".png", ***embedded files***, ***embeded***.len);
+    //        photo_image_array[i]   = rl.LoadImage("Photos/" ++ photo_info_array[i].filename);
+
+    //    }
+
+
     var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
     var   photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
 
-    // @cleanup: The image array may not be needed... so take it out if this is the case.
     inline for (0..NUMBER_OF_LINES) |i| {
-        photo_image_array[i]   = rl.LoadImage("Photos/" ++ photo_info_array[i].filename);
+        photo_image_array[i]   = rl.LoadImageFromMemory(".png", embedded_photo_array[i], embedded_photo_array[i].len);
         photo_texture_array[i] = rl.LoadTextureFromImage(photo_image_array[i]);
+
     }
     
     // Main game loop
@@ -186,9 +219,9 @@ pub fn main() anyerror!void {
         const br_button_pos = Vec2{br_button_x, br_button_y};
 
         const button_positions = [4] @Vector(2,f32) { tl_button_pos, 
-                                                      tr_button_pos,
-                                                      bl_button_pos,
-                                                      br_button_pos};
+                                                     tr_button_pos,
+                                                     bl_button_pos,
+                                                     br_button_pos};
 
         // Mouse input processing.
         const rl_mouse_pos : rl.Vector2 = rl.GetMousePosition();
@@ -235,7 +268,7 @@ pub fn main() anyerror!void {
         for (0..4) |i| {
             button_text[i] = photo_info_array[i].common_name;
         }
-//        const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
+        //        const button_text = [4] [] const u8{"Hackberry", "Little Copper", "Queen", "Little Yellow"};
         
         for (button_positions, 0..) |pos, i| {
             draw_text(button_text[i], pos, 50, BLACK, georgia_font);

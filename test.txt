@@ -1,2 +1,8 @@
-"0.png",Butterfly 1,url1,name1,license1,
-"1.png",Butterfly 2,url2,name2,license2,
+Tally of forgetting of doing
+    std.fmt.comptimePrint("{}", x);
+
+instead of
+
+    std.fmt.comptimePrint("{}", .{x});
+
+Current tally: 2

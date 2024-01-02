@@ -7,7 +7,7 @@ pub fn build(b: *std.Build) void {
 	const optimize = b.standardOptimizeOption(.{});
 
 	const exe = b.addExecutable(.{
-		.name = "zig-raylib",
+		.name = "butterfly-quiz",
 		.root_source_file = .{ .path = "main.zig" },
 		.target = target,
 		.optimize = optimize,
