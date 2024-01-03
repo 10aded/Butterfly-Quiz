@@ -375,12 +375,59 @@ fn process_input_update_state() void {
 
         current_photo_index = new_photo_index;
 
-        // Choose text options.
-        // TODO: Randomize the possible incorrect options.
-        const temp = current_text_options[0];
-        for (0..3) |i| {
-            current_text_options[i] = current_text_options[i + 1];
-        }
-        current_text_options[3] = temp;
+        update_button_options(current_photo_index);
     }
 }
+
+fn update_button_options(solution_index : u32) void {
+    const random = prng.random();
+    // Randomly fill the other options with distinct indexes.
+    const s = solution_index;
+    var   a = s;
+    var   b = s;
+    var   c = s;
+    while (s == a or s == b or s == c or a == b or a == c or b == c) {
+        a = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+        b = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+        c = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+    }
+
+    current_text_options = [4] u32 {s, a, b, c};
+    
+    // Randomly shuffle the button options.
+    const random_s4_index = random.intRangeAtMost(u8, 0, 23);
+    const random_s4_perm  = symmetric_group_s4[random_s4_index];
+    var   temp_options = current_text_options;
+    for (0..4) |i| {
+        temp_options[i] = current_text_options[random_s4_perm[i]];
+    }
+    current_text_options = temp_options;
+}
+    
+const symmetric_group_s3 = [6] [3] u8 {
+    [3] u8 {0, 1, 2},
+    [3] u8 {0, 2, 1},
+    [3] u8 {1, 0, 2},
+    [3] u8 {1, 2, 1},
+    [3] u8 {2, 0, 1},
+    [3] u8 {2, 1, 0},
+};
+
+fn generate_symmetric_group_s4() [24] [4] u8 {
+    var result : [24] [4] u8 = undefined;
+    for (symmetric_group_s3, 0..) |perm, i| {
+        result[i] = [4] u8 {3, perm[0], perm[1], perm[2]};
+    }
+    for (symmetric_group_s3, 0..) |perm, i| {
+        result[6 + i] = [4] u8 {perm[0], 3, perm[1], perm[2]};
+    }
+    for (symmetric_group_s3, 0..) |perm, i| {
+        result[12 + i] = [4] u8 {perm[0], perm[1], 3, perm[2]};
+    }
+    for (symmetric_group_s3, 0..) |perm, i| {
+        result[18 + i] = [4] u8 {perm[0], perm[1], perm[2], 3};
+    }
+    return result;
+}
+
+const symmetric_group_s4 = generate_symmetric_group_s4();
