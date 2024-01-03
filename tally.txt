@@ -1,0 +1,8 @@
+Tally of forgetting of doing
+    std.fmt.comptimePrint("{}", x);
+
+instead of
+
+    std.fmt.comptimePrint("{}", .{x});
+
+Current tally: 2
