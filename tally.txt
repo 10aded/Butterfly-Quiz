@@ -5,4 +5,4 @@ instead of
 
     std.fmt.comptimePrint("{}", .{x});
 
-Current tally: 2
+Current tally: 4

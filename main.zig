@@ -200,6 +200,11 @@ pub fn main() anyerror!void {
 //        photo_image_array[i]   = rl.LoadImageFromMemory(".png", embedded_photo_array[i], embedded_photo_array[i].len);
         photo_texture_array[i] = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".png", embedded_photo_array[i], embedded_photo_array[i].len));
     }
+
+    // Select a random current_photo_index and shuffle to begin with.
+    const random = prng.random();
+    current_photo_index = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+    update_button_options(current_photo_index);
     
     // Main game loop
     while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
@@ -393,13 +398,13 @@ fn update_button_options(solution_index : u32) void {
     }
 
     current_text_options = [4] u32 {s, a, b, c};
-    
+
     // Randomly shuffle the button options.
     const random_s4_index = random.intRangeAtMost(u8, 0, 23);
-    const random_s4_perm  = symmetric_group_s4[random_s4_index];
+    const random_perm     = symmetric_group_s4[random_s4_index];
     var   temp_options = current_text_options;
     for (0..4) |i| {
-        temp_options[i] = current_text_options[random_s4_perm[i]];
+        temp_options[i] = current_text_options[random_perm[i]];
     }
     current_text_options = temp_options;
 }
@@ -408,7 +413,7 @@ const symmetric_group_s3 = [6] [3] u8 {
     [3] u8 {0, 1, 2},
     [3] u8 {0, 2, 1},
     [3] u8 {1, 0, 2},
-    [3] u8 {1, 2, 1},
+    [3] u8 {1, 2, 0},
     [3] u8 {2, 0, 1},
     [3] u8 {2, 1, 0},
 };
