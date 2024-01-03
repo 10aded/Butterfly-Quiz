@@ -46,6 +46,7 @@ const button_hover_color  = YELLOW;
 const text_color          = GOLD;
 
 var button_option_font : rl.Font = undefined;
+var attribution_font : rl.Font = undefined;
 
 // UI Sizes
 const border_thickness    = 5;
@@ -59,8 +60,8 @@ const initial_screen_center = Vec2{ 0.5 * initial_screen_width, 0.5 * initial_sc
 // Screen size.
 var screen_width : f32  = undefined;
 var screen_hidth : f32  = undefined;
-var image_center : Vec2 = undefined;
-var image_height : f32  = undefined;
+var photo_center : Vec2 = undefined;
+var photo_height : f32  = undefined;
 
 // Button spaces.
 var button_width            : f32 = undefined;
@@ -180,8 +181,9 @@ pub fn main() anyerror!void {
 
     // Import fonts.
     //    const default_font = rl.GetFontDefault();
-    const georgia_font = rl.LoadFontEx("C:/Windows/Fonts/georgia.ttf", 200, null, 95);
+    const georgia_font = rl.LoadFontEx("C:/Windows/Fonts/georgia.ttf", 108, null, 95);
     button_option_font = georgia_font;
+    attribution_font   = georgia_font;
     
     // Load butterfly images.
 
@@ -214,8 +216,8 @@ pub fn main() anyerror!void {
         screen_width = initial_screen_width;
         screen_hidth = initial_screen_hidth;
         
-        image_center = Vec2 { 0.5 * screen_width, 0.3 * screen_hidth};
-        image_height = 0.5 * screen_hidth;
+        photo_center = Vec2 { 0.5 * screen_width, 0.3 * screen_hidth};
+        photo_height = 0.5 * screen_hidth;
         
         compute_button_geometry();
 
@@ -230,25 +232,44 @@ fn abs(x : f32) f32 {
     return if (x >= 0) x else -x;
 }
 
-// TODO: Make Vec2 type.
-fn draw_text( str : [] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
+fn draw_text_center( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
     // TODO: Figure out why <zig string>.ptr works!
-    const rl_string = str.ptr;
+//    const rl_string = str.ptr;
     // Figure out the center of the text by measuring the text itself.
     const spacing = height / 10;
-    const text_vec = rl.MeasureTextEx(font, rl_string, height, spacing);
+    const text_vec = rl.MeasureTextEx(font, str, height, spacing);
 
     const tl_pos = rl.Vector2{
         .x = pos[0] - 0.5 * text_vec.x,
         .y = pos[1] - 0.5 * text_vec.y,
     };
 
-    rl.DrawTextEx(font, rl_string, tl_pos, height, spacing, color);    
+    rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);    
 }
 
+fn draw_text_tl( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
+    const spacing = height / 10;
+    const tl_pos = rl.Vector2{
+        .x = pos[0],
+        .y = pos[1],
+    };
+    rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);    
+}
+
+fn draw_text_tr( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
+    const spacing = height / 10;
+    const text_vec = rl.MeasureTextEx(font, str, height, spacing);
+
+    const tl_pos = rl.Vector2{
+        .x = pos[0] - text_vec.x,
+        .y = pos[1],
+    };
+
+    rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);
+}
 
 // Draw a centered texture of a specified height.
-fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32, border_color : rl.Color ) void {
+fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32, border_color : rl.Color ) f32 {
     const twidth  : f32  = @floatFromInt(texturep.*.width);
     const theight : f32  = @floatFromInt(texturep.*.height);
     
@@ -264,6 +285,7 @@ fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : 
     // The 3rd arg (0) is for rotation.
     draw_centered_rect(center_pos, scaled_w + 2 * border_thickness, height + 2 * border_thickness, border_color);
     rl.DrawTextureEx(texturep.*, dumb_rl_tl_vec2, 0, scaling_ratio, WHITE);
+    return scaled_w;
 }
 
 fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) void {
@@ -279,6 +301,18 @@ fn render() void {
 
     rl.ClearBackground(DARKGRAY);
 
+    // Draw image, a border for it, and return the photo width.
+    const photo_width = draw_bordered_texture(&photo_texture_array[current_photo_index], photo_center, photo_height, BLACK);
+
+    // Image attribution.
+    const attribution_height = 0.04 * screen_hidth;
+    const attribution_spacing = 0.01 * screen_hidth;
+    const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
+    draw_text_tl(photo_info_array[current_photo_index].author, author_pos, attribution_height, WHITE, attribution_font);
+
+    const license_pos = author_pos + Vec2{photo_width, 0};
+    draw_text_tr(photo_info_array[current_photo_index].licence, license_pos, attribution_height, WHITE, attribution_font);
+    
     // Draw button colors.
     for (button_positions, 0..) |pos, i| {
         var button_interior_color = button_fill_color;
@@ -292,22 +326,21 @@ fn render() void {
 
         draw_centered_rect(pos, button_fill_width, button_fill_height, button_interior_color);
     }
-    
+
+    // Draw button text.
     for (current_text_options, 0..) |opt_i, i| {
         const pos = button_positions[i];
-        draw_text(photo_info_array[opt_i].common_name, pos, 50, BLACK, button_option_font);
+        draw_text_center(photo_info_array[opt_i].common_name, pos, 50, BLACK, button_option_font);
     }
 
-    // Draw image (and a border for it).
-    
-    draw_bordered_texture(&photo_texture_array[current_photo_index], image_center, image_height, BLACK);
+
 }
 
 fn compute_button_geometry() void {
     button_width            = 0.4 * screen_width;
     button_height           = 0.1 * screen_hidth;
-    button_horizontal_space = 0.1 * screen_width;
-    button_vertical_space   = 0.1 * screen_hidth;
+    button_horizontal_space = 0.05 * screen_width;
+    button_vertical_space   = 0.05 * screen_hidth;
     
     const button_grid_center = Vec2 { 0.5 * screen_width, 0.8 * screen_hidth };
 
@@ -356,10 +389,6 @@ fn process_input_update_state() void {
         }
     }
 
-    if ( button_clicked ) {
-        dprint("{s}{d}\n", .{"button clicked:", button_clicked_index}); // @debug
-    }
-
     // Detect if the correct button was pressed.
     // If so, update current_photo_index and current_text_options.
     // Otherwise (TODO): fade text / color on incorrect button choice
@@ -369,7 +398,7 @@ fn process_input_update_state() void {
 
     if ( button_clicked and current_text_options[button_clicked_index] == current_photo_index ) {
         // Correct option selected, so do updates.
-        dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index});
+//        dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index}); // @debug
 
         // Select a random int from 0..<NUMBER_OF_LINES,
         // until a different int than current_photo_index has been chosen.
