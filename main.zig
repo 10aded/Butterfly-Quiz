@@ -51,6 +51,7 @@ const PhotoInfo = struct{
     author          : [:0] const u8,
     licence         : [:0] const u8,
     licence_link    : [:0] const u8,
+    image_title     : [:0] const u8,
 };
 
 const photo_info_array = parse_input();
@@ -96,18 +97,19 @@ const button_vertical_space   = 0.1 * initial_screen_hidth;
 const NUMBER_OF_LINES = count_lines();
 
 fn count_lines() usize {
+    @setEvalBranchQuota(10_000);
     var count : usize = 0;
     for (photo_information_txt) |char| {
         if (char == '\n') count += 1;
     }
-    return count;
+    return count - 1; // We return -1 b.c. of headers in the first row of the information table.
 }
 
 // The comptime function we use to process "image-information.txt".
 // Huge thanks to tw0st3p for carrying me through this part on stream!
 
 fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
-    @setEvalBranchQuota(10_000);
+    @setEvalBranchQuota(100_000);
 
     //    @compileLog(NUMBER_OF_LINES);
     var   result : [NUMBER_OF_LINES] PhotoInfo = undefined;
@@ -115,13 +117,15 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
     
     // NOTE: The \r is needed for windows newlines!!!    
     var line_iter = std.mem.tokenizeAny(u8, photo_information_txt, "\r\n");
-    while (line_iter.next()) |line| : (photo_info_index += 1){ 
+    while (line_iter.next()) |line| : (photo_info_index += 1){
+        if (photo_info_index == 0) continue;
         var field_iter = std.mem.tokenizeAny(u8, line, ";");
         defer std.debug.assert(field_iter.next() == null);
 
         // May need @compileLog()
         //        @compileLog(line);
-        result[photo_info_index]  = PhotoInfo{
+        // The -1 appears below because we skip the first line in the info table.
+        result[photo_info_index - 1]  = PhotoInfo{
             .filename        = field_iter.next().? ++ "\x00",
             .common_name     = field_iter.next().? ++ "\x00",
             .scientific_name = field_iter.next().? ++ "\x00",
@@ -129,6 +133,7 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
             .author          = field_iter.next().? ++ "\x00",
             .licence         = field_iter.next().? ++ "\x00",
             .licence_link    = field_iter.next().? ++ "\x00",
+            .image_title     = field_iter.next().? ++ "\x00",
         };
         //        @compileLog(result[photo_info_index]);
     }
