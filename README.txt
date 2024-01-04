@@ -14,7 +14,7 @@ All photos in the project are from Wikimedia Commons, and as such they have all 
 
 The list of butterflies was taken from the book "Familiar Butterflies of North America" (National Audubon Society, 1990, Knopf, ISBN: 978-0-679-72981-5). By default, the order of butterflies that appear in the quiz are randomized, but if they were done sequentially (as per the .csv file), they would appear as they appear sequentially in the book.
 
-The project is written in Zig using the raylib library, specifically commit number 710e81, part of which is included in the project in the raylib directory.
+The project is written in Zig using the raylib library. We included the necessary source files from this in our project under the raylib directory, but deleted unnecessary parts of it (like its numerous examples). The files from it than are included are from commit number 710e81.
 
 Raylib is created by github user Ray (@github handle raysan5) and available at:
 
