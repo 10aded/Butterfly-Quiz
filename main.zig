@@ -11,6 +11,10 @@
 //
 // See the pages above for full license details.
 
+// NOTE: Currently the order of the animals shown is decided by permuting
+// an array of type [NUMBER_OF_LINES] u8, if the quiz has more than 255
+// animals errors will likely ensue.
+
 // TODO:
 // TODO: Embed whatever (public domain) font into binary.
 // - Add in detailed README about project, especially about photo licenses.
@@ -22,7 +26,7 @@
 const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
 
-const PHOTO_INFO_FILENAME = "photo-source-license-links.txt";
+const PHOTO_INFO_FILENAME = "photo-source-license-links.csv";
 
 const dprint = std.debug.print;
 
@@ -96,6 +100,14 @@ var   photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
 
 // Count the number of lines at compile time.
 const NUMBER_OF_LINES = count_lines();
+// NOTE: The order in which the questions are chosen is done by creating
+// a array of type [NUMBER_OF_LINES] u8, if a quiz with more than
+// 255 animals is desired, types from u8 will need to be updated.
+
+comptime {
+    std.debug.assert(NUMBER_OF_LINES < 255);
+}
+
 
 fn count_lines() usize {
     @setEvalBranchQuota(10_000);
@@ -208,8 +220,10 @@ pub fn main() anyerror!void {
 
     // Select a random current_photo_index and shuffle to begin with.
     const random = prng.random();
-    photo_indices = std.simd.iota(32, NUMBER_OF_LINES)
-    random.shuffle(u8, &photo_indices);
+    photo_indices = std.simd.iota(u32, NUMBER_OF_LINES);
+    dprint("photo indexes before shuffle: {d}\n", .{photo_indices});
+    random.shuffle(u32, &photo_indices);
+    dprint("photo indexes after shuffle: {d}\n", .{photo_indices});
     current_photo_index = 0;
     update_button_options(photo_indices[current_photo_index]);
     
@@ -307,16 +321,17 @@ fn render() void {
     rl.ClearBackground(DARKGRAY);
 
     // Draw image, a border for it, and return the photo width.
-    const photo_width = draw_bordered_texture(&photo_texture_array[current_photo_index], photo_center, photo_height, BLACK);
+    const photo_texture_index = photo_indices[current_photo_index];
+    const photo_width = draw_bordered_texture(&photo_texture_array[photo_texture_index], photo_center, photo_height, BLACK);
 
     // Image attribution.
     const attribution_height = 0.04 * screen_hidth;
     const attribution_spacing = 0.01 * screen_hidth;
     const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
-    draw_text_tl(photo_info_array[current_photo_index].author, author_pos, attribution_height, WHITE, attribution_font);
+    draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
 
     const license_pos = author_pos + Vec2{photo_width, 0};
-    draw_text_tr(photo_info_array[current_photo_index].licence, license_pos, attribution_height, WHITE, attribution_font);
+    draw_text_tr(photo_info_array[photo_indices[current_photo_index]].licence, license_pos, attribution_height, WHITE, attribution_font);
     
     // Draw button colors.
     for (button_positions, 0..) |pos, i| {
@@ -404,25 +419,17 @@ fn process_input_update_state() void {
 
     const random = prng.random();
 
-    if ( button_clicked and current_text_options[button_clicked_index] == current_photo_index ) {
+    if ( button_clicked and current_text_options[button_clicked_index] == photo_indices[current_photo_index] ) {
         // Correct option selected, so do updates.
 //        dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index}); // @debug
 
-        // Select a random int from 0..<NUMBER_OF_LINES,
-        // until a different int than current_photo_index has been chosen.
-        var new_photo_index = current_photo_index;
-        while (new_photo_index == current_photo_index) {
-            new_photo_index = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
-        }
 
-        current_photo_index = new_photo_index;
-
-        update_button_options(photo_indices[current_photo_index]);
         current_photo_index += 1;
         if (current_photo_index == NUMBER_OF_LINES) {
             current_photo_index = 0;
-            random.shuffle(u8, &photo_indices);
+            random.shuffle(u32, &photo_indices);
         }
+        update_button_options(photo_indices[current_photo_index]);
     }
 }
 
