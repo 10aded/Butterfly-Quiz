@@ -22,6 +22,8 @@
 const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
 
+const PHOTO_INFO_FILENAME = "photo-source-license-links.txt";
+
 const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
@@ -121,7 +123,7 @@ fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
 // it with some .csv library, we just tokenize over ";" and put the entries into
 // photo_info_array.
 
-const photo_information_txt = @embedFile("image-information.txt");
+const photo_information_txt = @embedFile(PHOTO_INFO_FILENAME);
 const PhotoInfo = struct{
     filename        : [:0] const u8,
     common_name     : [:0] const u8,
@@ -216,8 +218,8 @@ pub fn main() anyerror!void {
         screen_width = initial_screen_width;
         screen_hidth = initial_screen_hidth;
         
-        photo_center = Vec2 { 0.5 * screen_width, 0.3 * screen_hidth};
-        photo_height = 0.5 * screen_hidth;
+        photo_center = Vec2 { 0.5 * screen_width, 0.275 * screen_hidth};
+        photo_height = 0.45 * screen_hidth;
         
         compute_button_geometry();
 
@@ -333,7 +335,10 @@ fn render() void {
         draw_text_center(photo_info_array[opt_i].common_name, pos, 50, BLACK, button_option_font);
     }
 
-
+    // Draw extra attribution information.
+    const info_message : [:0] const u8 = "All the photos in this project are from Wikimedia Commons; see " ++ PHOTO_INFO_FILENAME ++ " for their sources.";
+    const info_pos = Vec2{0.5 * screen_width, 0.95 * screen_hidth};
+    draw_text_center(info_message, info_pos, attribution_height * 0.75, WHITE, attribution_font);
 }
 
 fn compute_button_geometry() void {
@@ -342,7 +347,7 @@ fn compute_button_geometry() void {
     button_horizontal_space = 0.05 * screen_width;
     button_vertical_space   = 0.05 * screen_hidth;
     
-    const button_grid_center = Vec2 { 0.5 * screen_width, 0.8 * screen_hidth };
+    const button_grid_center = Vec2 { 0.5 * screen_width, 0.75 * screen_hidth };
 
     const tl_button_x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
     const tr_button_x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;        
