@@ -82,8 +82,9 @@ var button_clicked = false;
 var button_clicked_index : usize = 0;
 
 // Question indexes
-var current_photo_index  : u32 = 0;
-var current_text_options = [4] u32{0, 1, 2, 3};
+var current_photo_index: u32 = undefined;
+var photo_indices: [NUMBER_OF_LINES]u32 = undefined;
+var current_text_options: [4]u32 = undefined;
 
 // Rngs
 var prng : std.rand.Xoshiro256 = undefined;
@@ -205,8 +206,10 @@ pub fn main() anyerror!void {
 
     // Select a random current_photo_index and shuffle to begin with.
     const random = prng.random();
-    current_photo_index = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
-    update_button_options(current_photo_index);
+    photo_indices = std.simd.iota(32, NUMBER_OF_LINES)
+    random.shuffle(u8, &photo_indices);
+    current_photo_index = 0;
+    update_button_options(photo_indices[current_photo_index]);
     
     // Main game loop
     while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
@@ -409,59 +412,31 @@ fn process_input_update_state() void {
 
         current_photo_index = new_photo_index;
 
-        update_button_options(current_photo_index);
+        update_button_options(photo_indices[current_photo_index]);
+        current_photo_index += 1;
+        if (current_photo_index == NUMBER_OF_LINES) {
+            current_photo_index = 0;
+            random.shuffle(u8, &photo_indices);
+        }
     }
 }
 
 fn update_button_options(solution_index : u32) void {
+    current_text_options[0] = solution_index;
     const random = prng.random();
+
     // Randomly fill the other options with distinct indexes.
-    const s = solution_index;
-    var   a = s;
-    var   b = s;
-    var   c = s;
-    while (s == a or s == b or s == c or a == b or a == c or b == c) {
-        a = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
-        b = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
-        c = random.intRangeAtMost(u8, 0, NUMBER_OF_LINES - 1);
+    var indices: [NUMBER_OF_LINES]u32 = std.simd.iota(u32, NUMBER_OF_LINES);
+    random.shuffle(u32, &indices);
+
+    var i: u32 = 1;
+    for (indices) |index| {
+        if (index == solution_index) continue;
+        current_text_options[i] = index;
+        i += 1;
+        if (i == 4) break;
     }
 
-    current_text_options = [4] u32 {s, a, b, c};
-
-    // Randomly shuffle the button options.
-    const random_s4_index = random.intRangeAtMost(u8, 0, 23);
-    const random_perm     = symmetric_group_s4[random_s4_index];
-    var   temp_options = current_text_options;
-    for (0..4) |i| {
-        temp_options[i] = current_text_options[random_perm[i]];
-    }
-    current_text_options = temp_options;
-}
-    
-const symmetric_group_s3 = [6] [3] u8 {
-    [3] u8 {0, 1, 2},
-    [3] u8 {0, 2, 1},
-    [3] u8 {1, 0, 2},
-    [3] u8 {1, 2, 0},
-    [3] u8 {2, 0, 1},
-    [3] u8 {2, 1, 0},
-};
-
-fn generate_symmetric_group_s4() [24] [4] u8 {
-    var result : [24] [4] u8 = undefined;
-    for (symmetric_group_s3, 0..) |perm, i| {
-        result[i] = [4] u8 {3, perm[0], perm[1], perm[2]};
-    }
-    for (symmetric_group_s3, 0..) |perm, i| {
-        result[6 + i] = [4] u8 {perm[0], 3, perm[1], perm[2]};
-    }
-    for (symmetric_group_s3, 0..) |perm, i| {
-        result[12 + i] = [4] u8 {perm[0], perm[1], 3, perm[2]};
-    }
-    for (symmetric_group_s3, 0..) |perm, i| {
-        result[18 + i] = [4] u8 {perm[0], perm[1], perm[2], 3};
-    }
-    return result;
+    random.shuffle(u32, &current_text_options);
 }
 
-const symmetric_group_s4 = generate_symmetric_group_s4();
