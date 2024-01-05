@@ -16,12 +16,7 @@
 // animals errors will likely ensue.
 
 // TODO:
-// TODO: Embed whatever (public domain) font into binary.
 // - Add in detailed README about project, especially about photo licenses.
-// - Randomize incorrect name options.
-// suggestion: use std.rand.Random.shuffle()
-// See https://zigbin.io/56ecb3
-// - Randomize photo selection order.
 
 const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
@@ -359,9 +354,11 @@ fn render() void {
     }
 
     // Draw extra attribution information.
-    const info_message : [:0] const u8 = "All the photos in this project are from Wikimedia Commons; see " ++ PHOTO_INFO_FILENAME ++ " for their sources.";
+    const info_message1 : [:0] const u8 = "All the photos in this project are from Wikimedia Commons; url links to their sources and licenses are located at";
+    const info_message2 : [:0] const u8 = "https://github.com/10aded/Butterfly-Quiz in the" ++ PHOTO_INFO_FILENAME ++ "file";
     const info_pos = Vec2{0.5 * screen_width, 0.95 * screen_hidth};
-    draw_text_center(info_message, info_pos, attribution_height * 0.75, WHITE, attribution_font);
+    draw_text_center(info_message1, info_pos - Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, WHITE, attribution_font);
+    draw_text_center(info_message2, info_pos + Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, WHITE, attribution_font);
 }
 
 fn compute_button_geometry() void {
