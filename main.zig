@@ -28,6 +28,8 @@ const rl  = @cImport(@cInclude("raylib.h"));
 
 const PHOTO_INFO_FILENAME = "photo-source-license-links.csv";
 
+const merriweather_ttf  : [:0] const u8 = @embedFile("Merriweather-Regular.ttf");
+
 const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
@@ -196,9 +198,12 @@ pub fn main() anyerror!void {
 
     // Import fonts.
     //    const default_font = rl.GetFontDefault();
-    const georgia_font = rl.LoadFontEx("C:/Windows/Fonts/georgia.ttf", 108, null, 95);
-    button_option_font = georgia_font;
-    attribution_font   = georgia_font;
+    
+    const merriweather_font = rl.LoadFontFromMemory(".ttf", merriweather_ttf, merriweather_ttf.len, 50, null, 95);
+    
+//    const georgia_font = rl.LoadFontEx("C:/Windows/Fonts/georgia.ttf", 108, null, 95);
+    button_option_font = merriweather_font;
+    attribution_font   = merriweather_font;
     
     // Load butterfly images.
 
@@ -221,9 +226,9 @@ pub fn main() anyerror!void {
     // Select a random current_photo_index and shuffle to begin with.
     const random = prng.random();
     photo_indices = std.simd.iota(u32, NUMBER_OF_LINES);
-    dprint("photo indexes before shuffle: {d}\n", .{photo_indices});
+//    dprint("photo indexes before shuffle: {d}\n", .{photo_indices}); // @debug
     random.shuffle(u32, &photo_indices);
-    dprint("photo indexes after shuffle: {d}\n", .{photo_indices});
+//    dprint("photo indexes after shuffle: {d}\n", .{photo_indices}); // @debug
     current_photo_index = 0;
     update_button_options(photo_indices[current_photo_index]);
     
