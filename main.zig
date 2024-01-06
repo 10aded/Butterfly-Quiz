@@ -165,7 +165,7 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
         var field_iter = std.mem.tokenizeAny(u8, line, ";");
         defer std.debug.assert(field_iter.next() == null);
 
-        // @compileLog(line); // @debug
+//        @compileLog(photo_info_index); // @debug
         // The -1 appears below because we skip the first line in the info table.
         result[photo_info_index - 1]  = PhotoInfo{
             .filename        = field_iter.next().? ++ "\x00",
