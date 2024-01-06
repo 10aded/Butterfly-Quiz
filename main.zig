@@ -107,7 +107,7 @@ comptime {
 
 
 fn count_lines() usize {
-    @setEvalBranchQuota(10_000);
+    @setEvalBranchQuota(20_000);
     var count : usize = 0;
     for (photo_information_txt) |char| {
         if (char == '\n') count += 1;
