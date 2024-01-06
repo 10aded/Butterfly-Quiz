@@ -266,13 +266,16 @@ fn draw_text_center( str : [:0] const u8, pos : Vec2, height : f32, color : rl.C
     rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);    
 }
 
-fn draw_text_tl( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
+// Draw text in the top left position, and return the length of the text.
+fn draw_text_tl( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) f32 {
     const spacing = height / 10;
+    const text_vec = rl.MeasureTextEx(font, str, height, spacing);
     const tl_pos = rl.Vector2{
         .x = pos[0],
         .y = pos[1],
     };
-    rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);    
+    rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);
+    return text_vec.x;
 }
 
 fn draw_text_tr( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
@@ -328,10 +331,20 @@ fn render() void {
     const attribution_height = 0.04 * screen_hidth;
     const attribution_spacing = 0.01 * screen_hidth;
     const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
-    draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
+    const author_len = draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
 
-    const license_pos = author_pos + Vec2{photo_width, 0};
-    draw_text_tr(photo_info_array[photo_indices[current_photo_index]].licence, license_pos, attribution_height, WHITE, attribution_font);
+    // Check if the author name overlaps with the licence abbreviation. If so, draw the license abbreviation slightly lower.
+    const license_abbr = photo_info_array[photo_indices[current_photo_index]].licence;
+    const text_vec = rl.MeasureTextEx(attribution_font, license_abbr, attribution_height, attribution_height / 10); // @hack, nasty...
+    const is_overlapping = photo_width - text_vec.x < author_len;
+
+    var license_pos : Vec2 = undefined;
+    if (is_overlapping) {
+        license_pos = author_pos + Vec2{photo_width, 0.04 * screen_hidth};
+    } else {
+        license_pos = author_pos + Vec2{photo_width, 0};
+    }
+    draw_text_tr(license_abbr, license_pos, attribution_height, WHITE, attribution_font);
     
     // Draw button colors.
     for (button_positions, 0..) |pos, i| {
