@@ -1,0 +1,11 @@
+// Debug times:
+Using 11 .qoi images:  601ms
+Using 11 .png images: 1510ms
+
+// ReleaseFast times:
+Using 11 .qoi images: 452ms
+Using 11 .png images: 728ms
+
+// ReleaseFast binary sizes:
+Using 11 .qoi images: 33.8 MB
+Using 11 .png images: 29.1 MB

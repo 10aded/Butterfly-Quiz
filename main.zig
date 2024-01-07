@@ -22,6 +22,7 @@ const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
 
 const PHOTO_INFO_FILENAME = "photo-source-license-links.csv";
+//const PHOTO_INFO_FILENAME = "qoi-csv-test.csv"; // @experiment 
 
 const merriweather_ttf  : [:0] const u8 = @embedFile("Merriweather-Regular.ttf");
 
@@ -118,11 +119,15 @@ fn count_lines() usize {
 // Embed the photos in ./Photos/ into the .exe
 const embedded_photo_array = embed_photos();
 
+
+// We embed .qoi files over .png files since we ran an experiment (see timing-test.txt) and found
+// that while the size of the .exe was about 10% larger for the .png version, the app startup
+// time in both Debug and ReleaseFast modes was significantly faster (about 2.5x, 40% faster respectively.)
 fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
     var result : [NUMBER_OF_LINES] [:0] const u8 = undefined;
     for (0..NUMBER_OF_LINES) |i| {
         const str_i = std.fmt.comptimePrint("{}", .{i});
-        result[i] = @embedFile("Photos/" ++ str_i ++ ".png");
+        result[i] = @embedFile("Photos/" ++ str_i ++ ".qoi");
     }
     return result;
 }
@@ -182,6 +187,12 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
 }
 
 pub fn main() anyerror!void {
+
+    // @experiment
+    // Setup a Timer to see the difference between loading .pngs as textures
+    // vs loading .qois
+//    var stopwatch = try std.time.Timer.start();
+    
     // Set up RNG.
     const seed   = std.time.milliTimestamp();
     prng   = std.rand.DefaultPrng.init(@intCast(seed));
@@ -202,10 +213,12 @@ pub fn main() anyerror!void {
     
     // Load butterfly images.
 
-    // Ludicrously, raylib does not using .jpgs as textures in the intuitive way.
+    // Ludicrously, raylib does not like using .jpgs as textures in the intuitive way.
     // (not that they actually tell you this !!!!)
-    // Loading .jps caused fails, so the all images are .png files.    
-    // As such, every image in this project will be a .png file.
+    // Loading .jps caused fails, so the all images are .qoi files.
+    // We chose .qoi files over .png since the app startup times were significantly faster,
+    // see "timing-test.txt" for details.
+    //
     // All of the photos in this project have either been released to either
     // the public domain or have a creative commons license.
     // Their authors, and a link to the original work and license can be found in
@@ -214,10 +227,14 @@ pub fn main() anyerror!void {
 //    var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
 
     inline for (0..NUMBER_OF_LINES) |i| {
-//        photo_image_array[i]   = rl.LoadImageFromMemory(".png", embedded_photo_array[i], embedded_photo_array[i].len);
-        photo_texture_array[i] = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".png", embedded_photo_array[i], embedded_photo_array[i].len));
+        photo_texture_array[i] = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".qoi", embedded_photo_array[i], embedded_photo_array[i].len));
     }
 
+    // @experiment
+    // Measure texture loading time.
+    //    const texture_loading_time_nano = stopwatch.read();
+    //    dprint(".qoi loading time: {}\n", .{std.fmt.fmtDuration(texture_loading_time_nano)});
+    
     // Select a random current_photo_index and shuffle to begin with.
     const random = prng.random();
     photo_indices = std.simd.iota(u32, NUMBER_OF_LINES);
