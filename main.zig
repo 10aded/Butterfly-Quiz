@@ -158,7 +158,7 @@ const photo_info_array = parse_input();
 fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
     // The standard zig documentation has examples about setEvalBranchQuota.
     // Without this a compile error is generated saying the limit is too low.
-    @setEvalBranchQuota(100_000);
+    @setEvalBranchQuota(200_000);
 
     var result : [NUMBER_OF_LINES] PhotoInfo = undefined;
     var photo_info_index = 0;
