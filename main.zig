@@ -16,6 +16,7 @@
 // animals errors will likely ensue.
 
 // TODO:
+// - Replace all raylib colors with nicer manually specified options.
 // - Visually indicate when an incorrect option has been chosen.
 // - Add in detailed README about project, especially about photo licenses.
 
@@ -41,14 +42,19 @@ const DARKGRAY  = rl.DARKGRAY;
 const GRAY      = rl.GRAY;
 const LIGHTGRAY = rl.LIGHTGRAY;
 const WHITE     = rl.WHITE;
+const BEIGE     = rl.BEIGE;
+const BROWN     = rl.BROWN;
 
 // UI Colors
-const background_color    = DARKGRAY;
-const button_border_color = BLACK;
-const button_fill_color   = LIGHTGRAY;
-const button_hover_color  = YELLOW;
-
-const text_color          = GOLD;
+const background_color               = DARKGRAY;
+const button_border_color_unselected = BLACK;
+const button_border_color_incorrect  = LIGHTGRAY;
+const button_fill_color_unselected   = LIGHTGRAY;
+const button_hover_color_unselected  = YELLOW;
+const button_hover_color_incorrect   = RED;
+const button_fill_color_incorrect    = BEIGE;
+const option_text_color_default      = BLACK;
+const option_text_color_incorrect    = DARKGRAY;
 
 var button_option_font : rl.Font = undefined;
 var attribution_font : rl.Font = undefined;
@@ -85,6 +91,7 @@ var button_positions : [4] @Vector(2,f32) = undefined;
 var button_hover   = [4] bool { false, false, false, false };
 var button_clicked = false;
 var button_clicked_index : usize = 0;
+var incorrect_option_chosen = [4] bool { false, false, false, false };
 
 // Question indexes
 var current_photo_index: u32 = undefined;
@@ -366,12 +373,24 @@ fn render() void {
     
     // Draw button colors.
     for (button_positions, 0..) |pos, i| {
-        var button_interior_color = button_fill_color;
+        var button_interior_color = button_fill_color_unselected;
         if (button_hover[i]) {
-            button_interior_color = button_hover_color;
+            button_interior_color = button_hover_color_unselected;
+            if (incorrect_option_chosen[i]) {
+                button_interior_color = button_hover_color_incorrect;
+            }
+        } else {
+            button_interior_color = button_fill_color_unselected;
+            if (incorrect_option_chosen[i]) {
+                button_interior_color = button_fill_color_incorrect;
+            }
         }
-        
-        draw_centered_rect(pos, button_width, button_height, button_border_color);
+
+        var border_color = button_border_color_unselected;
+        if (incorrect_option_chosen[i]) {
+            border_color = button_border_color_incorrect;
+        }
+        draw_centered_rect(pos, button_width, button_height, border_color);
         const button_fill_width  = @max(0, button_width  - 2 * border_thickness);
         const button_fill_height = @max(0, button_height - 2 * border_thickness);
 
@@ -381,7 +400,11 @@ fn render() void {
     // Draw button text.
     for (current_text_options, 0..) |opt_i, i| {
         const pos = button_positions[i];
-        draw_text_center(photo_info_array[opt_i].common_name, pos, 50, BLACK, button_option_font);
+        var text_color = option_text_color_default;
+        if (incorrect_option_chosen[i]) {
+            text_color = option_text_color_incorrect;
+        }
+        draw_text_center(photo_info_array[opt_i].common_name, pos, 50, text_color, button_option_font);
     }
 
     // Draw extra attribution information.
@@ -452,17 +475,22 @@ fn process_input_update_state() void {
 
     const random = prng.random();
 
-    if ( button_clicked and current_text_options[button_clicked_index] == photo_indices[current_photo_index] ) {
-        // Correct option selected, so do updates.
-//        dprint("DEBUG: Correct option selected ({})\n", .{button_clicked_index}); // @debug
-
-
-        current_photo_index += 1;
-        if (current_photo_index == NUMBER_OF_LINES) {
-            current_photo_index = 0;
-            random.shuffle(u32, &photo_indices);
+    if (button_clicked) {
+        // Determined if the correct option was selected.
+        if (current_text_options[button_clicked_index] == photo_indices[current_photo_index]) {
+            // Correct option selected, so do updates.
+            current_photo_index += 1;
+            if (current_photo_index == NUMBER_OF_LINES) {
+                current_photo_index = 0;
+                random.shuffle(u32, &photo_indices);
+            }
+            update_button_options(photo_indices[current_photo_index]);
+            incorrect_option_chosen = [4]bool{false, false, false, false};
+        } else {
+            // Incorrect option chosen, so set this.
+            incorrect_option_chosen[button_clicked_index] = true;
         }
-        update_button_options(photo_indices[current_photo_index]);
+        dprint("{any}\n", .{incorrect_option_chosen}); // @debug
     }
 }
 
