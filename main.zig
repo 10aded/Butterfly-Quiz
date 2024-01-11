@@ -16,6 +16,7 @@
 // animals errors will likely ensue.
 
 // TODO:
+// - Visually indicate when an incorrect option has been chosen.
 // - Add in detailed README about project, especially about photo licenses.
 
 const std = @import("std");
@@ -108,7 +109,7 @@ comptime {
 
 
 fn count_lines() usize {
-    @setEvalBranchQuota(20_000);
+    @setEvalBranchQuota(30_000);
     var count : usize = 0;
     for (photo_information_txt) |char| {
         if (char == '\n') count += 1;
