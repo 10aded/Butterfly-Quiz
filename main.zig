@@ -389,9 +389,8 @@ fn render() void {
     const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
     const author_len = draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
 
-    // Check if the author name overlaps with the licence abbreviation (which can
-    // occur (e.g.) in photos with a small width).
-    // If so, draw the license abbreviation slightly lower.
+    // Nudge the attribution abbreviation down if it overlaps with the photographer.
+    // This can occur (e.g.) in photos with a small width.
     // This is a bit hacky, but gets the job done.
     const license_abbr = photo_info_array[photo_indices[current_photo_index]].licence;
     const text_vec = rl.MeasureTextEx(attribution_font, license_abbr, attribution_height, attribution_height / 10);
@@ -404,8 +403,13 @@ fn render() void {
     
     draw_text_tr(license_abbr, license_pos, attribution_height, attribution_text_color, attribution_font);
     
-    // Draw button colors.
+    // Set button colors.
     for (button_positions, 0..) |pos, i| {
+        var border_color = button_border_color_unselected;
+        if (incorrect_option_chosen[i]) {
+            border_color = button_border_color_incorrect;
+        }
+        
         var button_interior_color = button_fill_color_unselected;
         if (button_hover[i]) {
             button_interior_color = button_hover_color_unselected;
@@ -419,10 +423,7 @@ fn render() void {
             }
         }
 
-        var border_color = button_border_color_unselected;
-        if (incorrect_option_chosen[i]) {
-            border_color = button_border_color_incorrect;
-        }
+        // Draw button rectangles.
         draw_centered_rect(pos, button_width, button_height, border_color);
         const button_fill_width  = @max(0, button_width  - 2 * border_thickness);
         const button_fill_height = @max(0, button_height - 2 * border_thickness);
@@ -442,41 +443,43 @@ fn render() void {
     }
 
     // Draw extra attribution information.
-    const info_message1 : [:0] const u8 = "All the photos in this project are from Wikimedia Commons; url links to their sources and licenses are located at";
-    const info_message2 : [:0] const u8 = "https://github.com/10aded/Butterfly-Quiz in the" ++ PHOTO_INFO_FILENAME ++ "file";
-    const info_pos = Vec2{0.5 * screen_width, 0.95 * screen_hidth};
-    draw_text_center(info_message1, info_pos - Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, WHITE, attribution_font);
-    draw_text_center(info_message2, info_pos + Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, WHITE, attribution_font);
+    const attr_message1 : [:0] const u8 = "All the photos in this project are from Wikimedia Commons; url links to their sources and licenses are located at";
+    const attr_message2 : [:0] const u8 = "https://github.com/10aded/Butterfly-Quiz in the" ++ " " ++ PHOTO_INFO_FILENAME ++ " " ++ "file";
+    const attr_pos = Vec2{0.5 * screen_width, 0.95 * screen_hidth};
+    draw_text_center(attr_message1, attr_pos - Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, attribution_text_color, attribution_font);
+    draw_text_center(attr_message2, attr_pos + Vec2{0, 0.02 * screen_hidth}, attribution_height * 0.75, attribution_text_color, attribution_font);
 }
 
+// The sizes of the buttons are dynamic in that they adjust with the dimensions
+// of the screen, so their sizes need to be computed. That happens here.
+
 fn compute_button_geometry() void {
-    button_width            = 0.4 * screen_width;
-    button_height           = 0.1 * screen_hidth;
+    button_width            = 0.4  * screen_width;
+    button_height           = 0.1  * screen_hidth;
     button_horizontal_space = 0.05 * screen_width;
     button_vertical_space   = 0.05 * screen_hidth;
     
     const button_grid_center = Vec2 { 0.5 * screen_width, 0.75 * screen_hidth };
 
-    const tl_button_x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
-    const tr_button_x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;        
-    const bl_button_x = tl_button_x;
-    const br_button_x = tr_button_x;
+    const tl_x = button_grid_center[0] - 0.5 * button_horizontal_space - 0.5 * button_width;
+    const tr_x = button_grid_center[0] + 0.5 * button_horizontal_space + 0.5 * button_width;        
+    const bl_x = tl_x;
+    const br_x = tr_x;
     
-    const tl_button_y = button_grid_center[1] - 0.5 * button_vertical_space - 0.5 * button_height;
-    const tr_button_y = tl_button_y;
-    const bl_button_y = button_grid_center[1] + 0.5 * button_vertical_space + 0.5 * button_height;
-    const br_button_y = bl_button_y;
+    const tl_y = button_grid_center[1] - 0.5 * button_vertical_space - 0.5 * button_height;
+    const bl_y = button_grid_center[1] + 0.5 * button_vertical_space + 0.5 * button_height;
+    const tr_y = tl_y;
+    const br_y = bl_y;
     
-    const tl_button_pos = Vec2{tl_button_x, tl_button_y};
-    const tr_button_pos = Vec2{tr_button_x, tr_button_y};
-    const bl_button_pos = Vec2{bl_button_x, bl_button_y};
-    const br_button_pos = Vec2{br_button_x, br_button_y};
+    const tl_pos = Vec2{tl_x, tl_y};
+    const tr_pos = Vec2{tr_x, tr_y};
+    const bl_pos = Vec2{bl_x, bl_y};
+    const br_pos = Vec2{br_x, br_y};
 
-    button_positions = [4] @Vector(2,f32) { tl_button_pos, 
-                                           tr_button_pos,
-                                           bl_button_pos,
-                                           br_button_pos};
+    button_positions = [4] @Vector(2,f32) { tl_pos, tr_pos, bl_pos, br_pos};
 }
+
+// Get the new mouse positions / mouse clicks, and update the state of the quiz.
 
 fn process_input_update_state() void {
     // Mouse input processing.
