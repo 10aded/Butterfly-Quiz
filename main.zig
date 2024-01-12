@@ -32,12 +32,16 @@ const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
 
-// Colors
-// TODO...
-// https://lospec.com/palette-list/st-8-moonlight
-// Skiller Thomson
-// https://lospec.com/palette-list/gloom-8
-// thatoneaiguy
+
+
+
+// Color theme.
+// The colors below have been selected from the color themes
+// st-8-moonlight and gloom-8 by Skiller Thomson and thatoneaiguy respectively.
+// The color themes are available on lospec.com at
+//     https://lospec.com/palette-list/st-8-moonlightfi
+//     https://lospec.com/palette-list/gloom-8//
+// respectively.
 
 const BLACK     = rlc(  0,   0,   0);
 const WHITE     = rlc(255, 255, 255);
@@ -54,7 +58,7 @@ const button_border_color_unselected = BLACK;
 const button_border_color_incorrect  = PURPLE2;
 const button_fill_color_unselected   = LBLUE2;
 const button_hover_color_unselected  = LBLUE1;
-const button_hover_color_incorrect   = DARKGRAY2;
+//const button_hover_color_incorrect   = DARKGRAY2;
 const button_fill_color_incorrect    = PURPLE1;
 const option_text_color_default      = BLACK;
 const option_text_color_incorrect    = DARKGRAY2;
@@ -380,7 +384,7 @@ fn render() void {
         if (button_hover[i]) {
             button_interior_color = button_hover_color_unselected;
             if (incorrect_option_chosen[i]) {
-                button_interior_color = button_hover_color_incorrect;
+                button_interior_color = button_fill_color_incorrect;
             }
         } else {
             button_interior_color = button_fill_color_unselected;
