@@ -1,7 +1,16 @@
-// File / Project description here...
-// TODO...
-
-// All of the animal names / photo author / photo location is in image-information.txt
+// This is a simple quiz game / app to help learn common butterflies
+// native to North America.
+//
+// The entire source code of this project is available on GitHub at:
+//
+//   https://github.com/10aded/Butterfly-Quiz
+//
+// and was developed (almost) entirely on the Twitch channel 10aded. Copies of the
+// stream have been posted to YouTube at the @10aded channel.
+//
+// All photos in the project are from Wikimedia Commons, and as such
+// have all be released under various Creative Commons / Public Domain licenses.
+// See the README for more information and links to the image sources / licenses.
 //
 // This project includes a copy of raylib, specifically commit number 710e81.
 //
@@ -11,33 +20,28 @@
 //
 // See the pages above for full license details.
 
-// NOTE: Currently the order of the animals shown is decided by permuting
-// an array of type [NUMBER_OF_LINES] u8, if the quiz has more than 255
-// animals errors will likely ensue.
-
-// TODO:
-// - Add in detailed README about project, especially about photo licenses.
-
 const std = @import("std");
 const rl  = @cImport(@cInclude("raylib.h"));
 
+// The database path with all of the photo source / author / license information.
 const PHOTO_INFO_FILENAME = "photo-source-license-links.csv";
-//const PHOTO_INFO_FILENAME = "qoi-csv-test.csv"; // @experiment 
 
+// The path of the font file, embedded at comptime.
 const merriweather_ttf  : [:0] const u8 = @embedFile("Merriweather-Regular.ttf");
-
-const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
 
 // Color theme.
 // The colors below have been selected from the color themes
-// st-8-moonlight and gloom-8 by Skiller Thomson and thatoneaiguy respectively.
-// The color themes are available on lospec.com at
-//     https://lospec.com/palette-list/st-8-moonlightfi
-//     https://lospec.com/palette-list/gloom-8//
+// - st-8-moonlight
+// - gloom-8
+// by Skiller Thomson and thatoneaiguy respectively.
+// These are available on lospec.com, and are archived at:
+//     https://web.archive.org/web/20221128055838/https://lospec.com/palette-list/st-8-moonlight
+//     https://web.archive.org/web/20240112214204/https://lospec.com/palette-list/gloom-8
 // respectively.
 
+// UI Colors
 const BLACK     = rlc(  0,   0,   0);
 const WHITE     = rlc(255, 255, 255);
 const LBLUE1    = rlc(195, 220, 229);
@@ -47,15 +51,14 @@ const PURPLE2   = rlc( 58,  55,  65);
 const DARKGRAY1 = rlc( 54,  57,  64);
 const DARKGRAY2 = rlc( 34,  36,  38);
 
-// UI Colors
 const background_color               = DARKGRAY1;
 const button_border_color_unselected = BLACK;
-const button_border_color_incorrect  = PURPLE2;
 const button_fill_color_unselected   = LBLUE2;
 const button_hover_color_unselected  = LBLUE1;
-//const button_hover_color_incorrect   = DARKGRAY2;
-const button_fill_color_incorrect    = PURPLE1;
 const option_text_color_default      = BLACK;
+
+const button_border_color_incorrect  = PURPLE2;
+const button_fill_color_incorrect    = PURPLE1;
 const option_text_color_incorrect    = DARKGRAY2;
 
 var button_option_font : rl.Font = undefined;
@@ -64,19 +67,21 @@ var attribution_font   : rl.Font = undefined;
 // UI Sizes
 const border_thickness    = 5;
 
-// Window defaults.
-const WINDOW_TITLE : [:0] const u8 = "Butterfly Quiz";
+// Window defaults
+const WINDOW_TITLE : [:0] const u8 = "Butterfly Quiz"; // Null-terminated since eventually passed to raylib.
 const initial_screen_width  = 1920;
 const initial_screen_hidth  = 1080;
 const initial_screen_center = Vec2{ 0.5 * initial_screen_width, 0.5 * initial_screen_hidth};
 
-// Screen size.
+// Screen size
 var screen_width : f32  = undefined;
 var screen_hidth : f32  = undefined;
-var photo_center : Vec2 = undefined;
-var photo_height : f32  = undefined;
 
-// Button spaces.
+// Photo size
+var photo_height : f32  = undefined;
+var photo_center : Vec2 = undefined;
+
+// Button and button spaces
 var button_width            : f32 = undefined;
 var button_height           : f32 = undefined;
 var button_horizontal_space : f32 = undefined;
@@ -84,61 +89,59 @@ var button_vertical_space   : f32 = undefined;
 
 // Game globals
 // Mouse
+var mouse_pos      : Vec2 = undefined;
 var mouse_down_last_frame = false;
 var mouse_down            = false;
-var mouse_pos : Vec2 = undefined;      
 
-// Button
-var button_positions : [4] @Vector(2,f32) = undefined;
-var button_hover   = [4] bool { false, false, false, false };
+// Button positions and interaction
+var button_positions        : [4] @Vector(2,f32) = undefined;
+var button_hover            = [4] bool { false, false, false, false };
+var incorrect_option_chosen = [4] bool { false, false, false, false };
 var button_clicked = false;
 var button_clicked_index : usize = 0;
-var incorrect_option_chosen = [4] bool { false, false, false, false };
 
 // Text heights
 var attribution_height : f32 = undefined;
 var button_text_height : f32 = undefined;
 
 // Question indexes
-var current_photo_index: u32 = undefined;
+var current_photo_index:            u32 = undefined;
 var photo_indices: [NUMBER_OF_LINES]u32 = undefined;
-var current_text_options: [4]u32 = undefined;
+var current_text_options:        [4]u32 = undefined;
 
-// Rngs
+// Random number generator
 var prng : std.rand.Xoshiro256 = undefined;
 
 // Photo textures.
-var   photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
+var photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
 
-// Count the number of lines at compile time.
+
+// Count the number of lines (at compile time).
 const NUMBER_OF_LINES = count_lines();
-// NOTE: The order in which the questions are chosen is done by creating
-// a array of type [NUMBER_OF_LINES] u8, if a quiz with more than
-// 255 animals is desired, types from u8 will need to be updated.
-
-comptime {
-    std.debug.assert(NUMBER_OF_LINES < 255);
-}
-
 
 fn count_lines() usize {
+    // The standard zig documentation has examples about setEvalBranchQuota.
+    // Without this a compile error is generated saying the limit is too low.
     @setEvalBranchQuota(30_000);
     var count : usize = 0;
-    for (photo_information_txt) |char| {
+    for (photo_information_csv) |char| {
         if (char == '\n') count += 1;
     }
-    return count - 1; // We return -1 b.c. of headers in the first row of the information table.
+    // We return one less than count because the first row in the photo information
+    // .csv file consists of column titles.
+    return count - 1;
 }
 
-// Embed the photos in ./Photos/ into the .exe
+// Embed the photos (in .qoi format) in ./Photos/ into the .exe
+// We use .qoi files over .png files since we ran an experiment (see timing-test.txt)
+// and found that while the size of the .exe was about 10% larger when using .png
+// versions of the images, the app startup time in both Debug and ReleaseFast modes
+// using .qoi files was significantly faster (about 2.5x, 40% faster respectively.)
+
 const embedded_photo_array = embed_photos();
 
-
-// We embed .qoi files over .png files since we ran an experiment (see timing-test.txt) and found
-// that while the size of the .exe was about 10% larger for the .png version, the app startup
-// time in both Debug and ReleaseFast modes was significantly faster (about 2.5x, 40% faster respectively.)
 fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
-    var result : [NUMBER_OF_LINES] [:0] const u8 = undefined;
+    var result  : [NUMBER_OF_LINES] [:0] const u8 = undefined;
     for (0..NUMBER_OF_LINES) |i| {
         const str_i = std.fmt.comptimePrint("{}", .{i});
         result[i] = @embedFile("Photos/" ++ str_i ++ ".qoi");
@@ -146,13 +149,14 @@ fn embed_photos() [NUMBER_OF_LINES] [:0] const u8 {
     return result;
 }
 
-// We process the photo metadata in `image-information.txt` at compile time for
-// use in the quiz.
-// While image-information.txt is a ; - delimited .csv file, instead of processing
-// it with some .csv library, we just tokenize over ";" and put the entries into
-// photo_info_array.
+// We process the photo metadata in `photo-source-license-links.csv` at
+// compile time for use in the quiz.
+// While photo-source-license-links.csv is a ; - delimited .csv file,
+// instead of processing it with some .csv library, we do it manually by just
+// tokenizing over ";" and put the entries into photo_info_array (below).
 
-const photo_information_txt = @embedFile(PHOTO_INFO_FILENAME);
+const photo_information_csv = @embedFile(PHOTO_INFO_FILENAME);
+
 const PhotoInfo = struct{
     filename        : [:0] const u8,
     common_name     : [:0] const u8,
@@ -166,26 +170,24 @@ const PhotoInfo = struct{
 
 const photo_info_array = parse_input();
 
-// The comptime function we use to process "image-information.txt".
+// The comptime function we use to process "photo-source-license-links.csv".
 // Huge thanks to tw0st3p for carrying me through this part on stream!
 
 fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
-    // The standard zig documentation has examples about setEvalBranchQuota.
-    // Without this a compile error is generated saying the limit is too low.
     @setEvalBranchQuota(200_000);
-
     var result : [NUMBER_OF_LINES] PhotoInfo = undefined;
     var photo_info_index = 0;
     
-    // NOTE: The \r is needed for windows newlines!!!    
-    var line_iter = std.mem.tokenizeAny(u8, photo_information_txt, "\r\n");
+    // Note: Since we complied this on Windows, the \r is needed
+    // to deal with the newlines!
+    var line_iter = std.mem.tokenizeAny(u8, photo_information_csv, "\r\n");
     while (line_iter.next()) |line| : (photo_info_index += 1){
         if (photo_info_index == 0) continue;
         var field_iter = std.mem.tokenizeAny(u8, line, ";");
         defer std.debug.assert(field_iter.next() == null);
 
-//        @compileLog(photo_info_index); // @debug
-        // The -1 appears below because we skip the first line in the info table.
+        // We use photo_info_index - 1 instead of photo_info_index since
+        // we want to skip the first line (of titles) in the photo info table.
         result[photo_info_index - 1]  = PhotoInfo{
             .filename        = field_iter.next().? ++ "\x00",
             .common_name     = field_iter.next().? ++ "\x00",
@@ -234,7 +236,7 @@ pub fn main() anyerror!void {
     // All of the photos in this project have either been released to either
     // the public domain or have a creative commons license.
     // Their authors, and a link to the original work and license can be found in
-    // image-information.txt.
+    // photo-source-license-links.csv.
 
 //    var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
 
