@@ -16,8 +16,6 @@
 // animals errors will likely ensue.
 
 // TODO:
-// - Replace all raylib colors with nicer manually specified options.
-// - Visually indicate when an incorrect option has been chosen.
 // - Add in detailed README about project, especially about photo licenses.
 
 const std = @import("std");
@@ -31,9 +29,6 @@ const merriweather_ttf  : [:0] const u8 = @embedFile("Merriweather-Regular.ttf")
 const dprint = std.debug.print;
 
 const Vec2   = @Vector(2, f32);
-
-
-
 
 // Color theme.
 // The colors below have been selected from the color themes
@@ -99,6 +94,10 @@ var button_hover   = [4] bool { false, false, false, false };
 var button_clicked = false;
 var button_clicked_index : usize = 0;
 var incorrect_option_chosen = [4] bool { false, false, false, false };
+
+// Text heights
+var attribution_height : f32 = undefined;
+var button_text_height : f32 = undefined;
 
 // Question indexes
 var current_photo_index: u32 = undefined;
@@ -211,24 +210,22 @@ pub fn main() anyerror!void {
     // Set up RNG.
     const seed   = std.time.milliTimestamp();
     prng   = std.rand.DefaultPrng.init(@intCast(seed));
-    
+
     rl.InitWindow(initial_screen_width, initial_screen_hidth, WINDOW_TITLE);
+    rl.SetWindowState(rl.FLAG_WINDOW_RESIZABLE);
+    
     defer rl.CloseWindow();
 
     rl.SetTargetFPS(144);
 
     // Import fonts.
-    //    const default_font = rl.GetFontDefault();
-    
-    const merriweather_font = rl.LoadFontFromMemory(".ttf", merriweather_ttf, merriweather_ttf.len, 50, null, 95);
-    
-//    const georgia_font = rl.LoadFontEx("C:/Windows/Fonts/georgia.ttf", 108, null, 95);
+    const merriweather_font = rl.LoadFontFromMemory(".ttf", merriweather_ttf, merriweather_ttf.len, 108, null, 95);
+
     button_option_font = merriweather_font;
     attribution_font   = merriweather_font;
     
     // Load butterfly images.
-
-    // Ludicrously, raylib does not like using .jpgs as textures in the intuitive way.
+    // Ludicrously, raylib does not like using .jpgs as textures in the intuitive way
     // (not that they actually tell you this !!!!)
     // Loading .jps caused fails, so the all images are .qoi files.
     // We chose .qoi files over .png since the app startup times were significantly faster,
@@ -262,10 +259,9 @@ pub fn main() anyerror!void {
     // Main game loop
     while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
 
-        // TODO: Adjust these when the window size can be adjusted.
         // Update screen dimensions.
-        screen_width = initial_screen_width;
-        screen_hidth = initial_screen_hidth;
+        screen_width = @floatFromInt(rl.GetScreenWidth());
+        screen_hidth = @floatFromInt(rl.GetScreenHeight());
         
         photo_center = Vec2 { 0.5 * screen_width, 0.275 * screen_hidth};
         photo_height = 0.45 * screen_hidth;
@@ -360,7 +356,7 @@ fn render() void {
     const photo_width = draw_bordered_texture(&photo_texture_array[photo_texture_index], photo_center, photo_height, BLACK);
 
     // Image attribution.
-    const attribution_height = 0.04 * screen_hidth;
+    attribution_height = 0.04 * screen_hidth;
     const attribution_spacing = 0.01 * screen_hidth;
     const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
     const author_len = draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
@@ -405,13 +401,14 @@ fn render() void {
     }
 
     // Draw button text.
+    button_text_height = 0.5 * button_height;
     for (current_text_options, 0..) |opt_i, i| {
         const pos = button_positions[i];
         var text_color = option_text_color_default;
         if (incorrect_option_chosen[i]) {
             text_color = option_text_color_incorrect;
         }
-        draw_text_center(photo_info_array[opt_i].common_name, pos, 50, text_color, button_option_font);
+        draw_text_center(photo_info_array[opt_i].common_name, pos, button_text_height, text_color, button_option_font);
     }
 
     // Draw extra attribution information.
@@ -497,7 +494,7 @@ fn process_input_update_state() void {
             // Incorrect option chosen, so set this.
             incorrect_option_chosen[button_clicked_index] = true;
         }
-        dprint("{any}\n", .{incorrect_option_chosen}); // @debug
+//        dprint("{any}\n", .{incorrect_option_chosen}); // @debug
     }
 }
 
