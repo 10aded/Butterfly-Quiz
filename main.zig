@@ -1,12 +1,19 @@
 // This is a simple quiz game / app to help learn common butterflies
 // native to North America.
 //
+// This project was compiled using the Zig compiler (version 0.11.0)
+// and built with the command:
+//
+//     zig build -Doptimize=ReleaseFast
+//
+// run in the top directory of the project.
+//
 // The entire source code of this project is available on GitHub at:
 //
 //   https://github.com/10aded/Butterfly-Quiz
 //
 // and was developed (almost) entirely on the Twitch channel 10aded. Copies of the
-// stream have been posted to YouTube at the @10aded channel.
+// stream are available on YouTube at the @10aded channel.
 //
 // All photos in the project are from Wikimedia Commons, and as such
 // have all be released under various Creative Commons / Public Domain licenses.
@@ -55,14 +62,18 @@ const background_color               = DARKGRAY1;
 const button_border_color_unselected = BLACK;
 const button_fill_color_unselected   = LBLUE2;
 const button_hover_color_unselected  = LBLUE1;
-const option_text_color_default      = BLACK;
+
 
 const button_border_color_incorrect  = PURPLE2;
 const button_fill_color_incorrect    = PURPLE1;
-const option_text_color_incorrect    = DARKGRAY2;
+
 
 var button_option_font : rl.Font = undefined;
 var attribution_font   : rl.Font = undefined;
+
+const option_text_color_default      = BLACK;
+const option_text_color_incorrect    = DARKGRAY2;
+const attribution_text_color         = WHITE;
 
 // UI Sizes
 const border_thickness    = 5;
@@ -188,6 +199,9 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
 
         // We use photo_info_index - 1 instead of photo_info_index since
         // we want to skip the first line (of titles) in the photo info table.
+        // Since we render several of these entries as text on screen with raylib,
+        // (which, as it is written in C, uses null-terminated strings) we need
+        // to convert the strings to be null-terminated, hence the "\x00" bytes.
         result[photo_info_index - 1]  = PhotoInfo{
             .filename        = field_iter.next().? ++ "\x00",
             .common_name     = field_iter.next().? ++ "\x00",
@@ -205,40 +219,41 @@ fn parse_input() [NUMBER_OF_LINES] PhotoInfo {
 pub fn main() anyerror!void {
 
     // @experiment
-    // Setup a Timer to see the difference between loading .pngs as textures
-    // vs loading .qois
-//    var stopwatch = try std.time.Timer.start();
+    // Setup a Timer to see the difference between loading creating textures from
+    // .png vs .qoi
+    // files.
+
+    // var stopwatch = try std.time.Timer.start();
     
     // Set up RNG.
-    const seed   = std.time.milliTimestamp();
-    prng   = std.rand.DefaultPrng.init(@intCast(seed));
+    const seed  = std.time.milliTimestamp();
+    prng        = std.rand.DefaultPrng.init(@intCast(seed));
 
+    // Spawn / setup raylib window.    
     rl.InitWindow(initial_screen_width, initial_screen_hidth, WINDOW_TITLE);
-    rl.SetWindowState(rl.FLAG_WINDOW_RESIZABLE);
-    
     defer rl.CloseWindow();
 
+    rl.SetWindowState(rl.FLAG_WINDOW_RESIZABLE);
     rl.SetTargetFPS(144);
 
-    // Import fonts.
+    // Import font from embedded file.
     const merriweather_font = rl.LoadFontFromMemory(".ttf", merriweather_ttf, merriweather_ttf.len, 108, null, 95);
 
     button_option_font = merriweather_font;
     attribution_font   = merriweather_font;
     
-    // Load butterfly images.
-    // Ludicrously, raylib does not like using .jpgs as textures in the intuitive way
-    // (not that they actually tell you this !!!!)
-    // Loading .jps caused fails, so the all images are .qoi files.
-    // We chose .qoi files over .png since the app startup times were significantly faster,
-    // see "timing-test.txt" for details.
+    // Load butterfly photos.
+    // We chose .qoi files over .png since these load faster as textures, see
+    // the comments near the procedure embed_photo() for more details.
     //
-    // All of the photos in this project have either been released to either
-    // the public domain or have a creative commons license.
-    // Their authors, and a link to the original work and license can be found in
-    // photo-source-license-links.csv.
-
-//    var   photo_image_array   : [NUMBER_OF_LINES] rl.Image     = undefined;
+    // NOTE: All of the photos in this project have been released under
+    // creative commons licenses or into the public domain.
+    // Their authors, and a link to the source of the photos (and their licenses)
+    // can be found in the file
+    //
+    //     photo-source-license-links.csv.
+    //
+    // in the GitHub source of this project, linked at the top of this file.
 
     inline for (0..NUMBER_OF_LINES) |i| {
         photo_texture_array[i] = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".qoi", embedded_photo_array[i], embedded_photo_array[i].len));
@@ -246,22 +261,24 @@ pub fn main() anyerror!void {
 
     // @experiment
     // Measure texture loading time.
-    //    const texture_loading_time_nano = stopwatch.read();
-    //    dprint(".qoi loading time: {}\n", .{std.fmt.fmtDuration(texture_loading_time_nano)});
+    // const texture_loading_time_nano = stopwatch.read();
+    // std.debug.print(".qoi loading time: {}\n", .{std.fmt.fmtDuration(texture_loading_time_nano)});
     
-    // Select a random current_photo_index and shuffle to begin with.
+    // Generate a random permutation of all photos.
     const random = prng.random();
+    // Create the list {0,1,2,..., NUMBER_OF_LINES - 1}.
     photo_indices = std.simd.iota(u32, NUMBER_OF_LINES);
-//    dprint("photo indexes before shuffle: {d}\n", .{photo_indices}); // @debug
+    // Shuffle the list.
     random.shuffle(u32, &photo_indices);
-//    dprint("photo indexes after shuffle: {d}\n", .{photo_indices}); // @debug
+    // Set up first photo / selection choices.
     current_photo_index = 0;
     update_button_options(photo_indices[current_photo_index]);
-    
-    // Main game loop
-    while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
 
-        // Update screen dimensions.
+    // +----------------+
+    // | Main game loop |
+    // +----------------+
+    while ( ! rl.WindowShouldClose() ) { // Listen for close button or ESC key.
+
         screen_width = @floatFromInt(rl.GetScreenWidth());
         screen_hidth = @floatFromInt(rl.GetScreenHeight());
         
@@ -276,16 +293,12 @@ pub fn main() anyerror!void {
     }
 }
 
-// In Zig version 0.12, @abs will be available, as of version 0.11 it is not. 
-fn abs(x : f32) f32 {
-    return if (x >= 0) x else -x;
-}
+// When text is drawn in raylib, the position parameter passed in determines
+// the top-left coordinate of the first character. Since we want to center the
+// button text, we need to do some position calculations before calling DrawTextEx.
 
 fn draw_text_center( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
-    // TODO: Figure out why <zig string>.ptr works!
-//    const rl_string = str.ptr;
-    // Figure out the center of the text by measuring the text itself.
-    const spacing = height / 10;
+    const spacing  = height / 10;
     const text_vec = rl.MeasureTextEx(font, str, height, spacing);
 
     const tl_pos = rl.Vector2{
@@ -296,11 +309,13 @@ fn draw_text_center( str : [:0] const u8, pos : Vec2, height : f32, color : rl.C
     rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);    
 }
 
-// Draw text in the top left position, and return the length of the text.
+// Draw text where the position determines the top-left coordinate of the first
+// character, but now also return the length of the text.
+
 fn draw_text_tl( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) f32 {
-    const spacing = height / 10;
+    const spacing  = height / 10;
     const text_vec = rl.MeasureTextEx(font, str, height, spacing);
-    const tl_pos = rl.Vector2{
+    const tl_pos   = rl.Vector2{
         .x = pos[0],
         .y = pos[1],
     };
@@ -308,8 +323,11 @@ fn draw_text_tl( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color
     return text_vec.x;
 }
 
+// Draw text where the position determines the top-right coordinate
+// of the last character.
+
 fn draw_text_tr( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color, font : rl.Font) void {
-    const spacing = height / 10;
+    const spacing  = height / 10;
     const text_vec = rl.MeasureTextEx(font, str, height, spacing);
 
     const tl_pos = rl.Vector2{
@@ -320,7 +338,11 @@ fn draw_text_tr( str : [:0] const u8, pos : Vec2, height : f32, color : rl.Color
     rl.DrawTextEx(font, str.ptr, tl_pos, height, spacing, color);
 }
 
-// Draw a centered texture of a specified height.
+// Draw a rectangle with a texture, as well as a border for the texture,
+// where the position determines the center of the rectangle
+// (instead of its top-left coordinate).
+// Note: The size of the border is determined by the global border_thickness.
+
 fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : f32, border_color : rl.Color ) f32 {
     const twidth  : f32  = @floatFromInt(texturep.*.width);
     const theight : f32  = @floatFromInt(texturep.*.height);
@@ -340,6 +362,8 @@ fn draw_bordered_texture(texturep : *rl.Texture2D, center_pos : Vec2 , height : 
     return scaled_w;
 }
 
+// Draw a plain (colored) rectangle, where the position determines the center.
+
 fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) void {
     const top_left_x : i32 = @intFromFloat(pos[0] - 0.5 * width);
     const top_left_y : i32 = @intFromFloat(pos[1] - 0.5 * height);
@@ -347,34 +371,38 @@ fn draw_centered_rect( pos : Vec2, width : f32, height : f32, color : rl.Color) 
 }
 
 
+// Our main render procedure, called once per frame.
+
 fn render() void {
     rl.BeginDrawing();
     defer rl.EndDrawing();
 
     rl.ClearBackground(background_color);
 
-    // Draw image, a border for it, and return the photo width.
+    // Draw the question photo, a border for it, and remember its width.
     const photo_texture_index = photo_indices[current_photo_index];
     const photo_width = draw_bordered_texture(&photo_texture_array[photo_texture_index], photo_center, photo_height, BLACK);
 
-    // Image attribution.
+    // Render attribution for the photo.
     attribution_height = 0.04 * screen_hidth;
     const attribution_spacing = 0.01 * screen_hidth;
     const author_pos = Vec2{photo_center[0] - 0.5 * photo_width, photo_center[1] + 0.5 * photo_height + attribution_spacing};
     const author_len = draw_text_tl(photo_info_array[photo_indices[current_photo_index]].author, author_pos, attribution_height, WHITE, attribution_font);
 
-    // Check if the author name overlaps with the licence abbreviation. If so, draw the license abbreviation slightly lower.
+    // Check if the author name overlaps with the licence abbreviation (which can
+    // occur (e.g.) in photos with a small width).
+    // If so, draw the license abbreviation slightly lower.
+    // This is a bit hacky, but gets the job done.
     const license_abbr = photo_info_array[photo_indices[current_photo_index]].licence;
-    const text_vec = rl.MeasureTextEx(attribution_font, license_abbr, attribution_height, attribution_height / 10); // @hack, nasty...
+    const text_vec = rl.MeasureTextEx(attribution_font, license_abbr, attribution_height, attribution_height / 10);
     const is_overlapping = photo_width - text_vec.x < author_len;
 
-    var license_pos : Vec2 = undefined;
+    var license_pos : Vec2 = author_pos + Vec2{photo_width,0};
     if (is_overlapping) {
-        license_pos = author_pos + Vec2{photo_width, 0.04 * screen_hidth};
-    } else {
-        license_pos = author_pos + Vec2{photo_width, 0};
+        license_pos += Vec2{0, 0.04 * screen_hidth};
     }
-    draw_text_tr(license_abbr, license_pos, attribution_height, WHITE, attribution_font);
+    
+    draw_text_tr(license_abbr, license_pos, attribution_height, attribution_text_color, attribution_font);
     
     // Draw button colors.
     for (button_positions, 0..) |pos, i| {
@@ -527,4 +555,14 @@ fn rlc(r : u8, g : u8, b : u8) rl.Color {
         .a = 255,
     };
     return rlcolor;
+}
+
+// In Zig version 0.11.0, the builtin function @abs is not available, (although
+// it seems like it will be available in Zig version 0.12.0).
+// So this is just a crude absolute value function.
+// We know there are more efficient ways to do this (like e.g. those in
+// Hacker's Delight by Warren), but this is a simple app so don't @ me!
+
+fn abs(x : f32) f32 {
+    return if (x >= 0) x else -x;
 }
