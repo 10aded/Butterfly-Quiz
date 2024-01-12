@@ -33,31 +33,34 @@ const dprint = std.debug.print;
 const Vec2   = @Vector(2, f32);
 
 // Colors
-const RED    = rl.RED;
-const YELLOW = rl.YELLOW;
-const GOLD   = rl.GOLD;
+// TODO...
+// https://lospec.com/palette-list/st-8-moonlight
+// Skiller Thomson
+// https://lospec.com/palette-list/gloom-8
+// thatoneaiguy
 
-const BLACK     = rl.BLACK;
-const DARKGRAY  = rl.DARKGRAY;
-const GRAY      = rl.GRAY;
-const LIGHTGRAY = rl.LIGHTGRAY;
-const WHITE     = rl.WHITE;
-const BEIGE     = rl.BEIGE;
-const BROWN     = rl.BROWN;
+const BLACK     = rlc(  0,   0,   0);
+const WHITE     = rlc(255, 255, 255);
+const LBLUE1    = rlc(195, 220, 229);
+const LBLUE2    = rlc(163, 190, 204);
+const PURPLE1   = rlc( 81,  78,  93);
+const PURPLE2   = rlc( 58,  55,  65);
+const DARKGRAY1 = rlc( 54,  57,  64);
+const DARKGRAY2 = rlc( 34,  36,  38);
 
 // UI Colors
-const background_color               = DARKGRAY;
+const background_color               = DARKGRAY1;
 const button_border_color_unselected = BLACK;
-const button_border_color_incorrect  = LIGHTGRAY;
-const button_fill_color_unselected   = LIGHTGRAY;
-const button_hover_color_unselected  = YELLOW;
-const button_hover_color_incorrect   = RED;
-const button_fill_color_incorrect    = BEIGE;
+const button_border_color_incorrect  = PURPLE2;
+const button_fill_color_unselected   = LBLUE2;
+const button_hover_color_unselected  = LBLUE1;
+const button_hover_color_incorrect   = DARKGRAY2;
+const button_fill_color_incorrect    = PURPLE1;
 const option_text_color_default      = BLACK;
-const option_text_color_incorrect    = DARKGRAY;
+const option_text_color_incorrect    = DARKGRAY2;
 
 var button_option_font : rl.Font = undefined;
-var attribution_font : rl.Font = undefined;
+var attribution_font   : rl.Font = undefined;
 
 // UI Sizes
 const border_thickness    = 5;
@@ -346,7 +349,7 @@ fn render() void {
     rl.BeginDrawing();
     defer rl.EndDrawing();
 
-    rl.ClearBackground(DARKGRAY);
+    rl.ClearBackground(background_color);
 
     // Draw image, a border for it, and return the photo width.
     const photo_texture_index = photo_indices[current_photo_index];
@@ -513,3 +516,12 @@ fn update_button_options(solution_index : u32) void {
     random.shuffle(u32, &current_text_options);
 }
 
+fn rlc(r : u8, g : u8, b : u8) rl.Color {
+    const rlcolor = rl.Color{
+        .r = r,
+        .g = g,
+        .b = b,
+        .a = 255,
+    };
+    return rlcolor;
+}
