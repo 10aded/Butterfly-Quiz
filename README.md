@@ -1,6 +1,6 @@
 This is a simple quiz game / app to help the player learn common butterflies native to North America.
 
-![Screenshot](screenshot.png "A screenshot from the app."){width="960"}
+<img src="screenshot.png" title="A screenshot from the app." width="960">
 
 ### Build Instructions
 
