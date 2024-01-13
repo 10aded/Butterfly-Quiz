@@ -483,18 +483,20 @@ fn compute_button_geometry() void {
 
 fn process_input_update_state() void {
     // Mouse input processing.
-    const rl_mouse_pos : rl.Vector2 = rl.GetMousePosition();
+    const rl_mouse_pos = rl.GetMousePosition();
     mouse_pos = Vec2 { rl_mouse_pos.x, rl_mouse_pos.y};
 
     // Detect button clicks.
     mouse_down = rl.IsMouseButtonDown(rl.MOUSE_BUTTON_LEFT);
     defer mouse_down_last_frame = mouse_down;
 
-    // Compute hovers.
+    // Compute when the mouse is hovering over a button.
     for (button_positions, 0..) |pos, i| {
-        button_hover[i] = abs(pos[0] - mouse_pos[0]) <= 0.5 * button_width and abs(pos[1] - mouse_pos[1]) <= 0.5 * button_height;
+        const center_diff = pos - mouse_pos;
+        button_hover[i] = abs(center_diff[0]) <= 0.5 * button_width and abs(center_diff[1]) <= 0.5 * button_height;
     }
-    
+
+    // Determine a button has been clicked, and if so, what its index is.
     button_clicked = false;
     button_clicked_index = 0;
     for (0..4) |i| {
@@ -507,8 +509,7 @@ fn process_input_update_state() void {
 
     // Detect if the correct button was pressed.
     // If so, update current_photo_index and current_text_options.
-    // Otherwise (TODO): fade text / color on incorrect button choice
-    // (if a button was pressed).
+    // Otherwise fade button color / text when an incorrect choice is clicked.
 
     const random = prng.random();
 
@@ -522,33 +523,38 @@ fn process_input_update_state() void {
                 random.shuffle(u32, &photo_indices);
             }
             update_button_options(photo_indices[current_photo_index]);
+            // Reset tracking which incorrect options were clicked.
             incorrect_option_chosen = [4]bool{false, false, false, false};
         } else {
-            // Incorrect option chosen, so set this.
+            // An incorrect option was clicked, so track it.
             incorrect_option_chosen[button_clicked_index] = true;
         }
-//        dprint("{any}\n", .{incorrect_option_chosen}); // @debug
     }
 }
+
+// Randomly choose three incorrect options for a given photo,
+// and permute these with the correct option.
 
 fn update_button_options(solution_index : u32) void {
     current_text_options[0] = solution_index;
     const random = prng.random();
 
-    // Randomly fill the other options with distinct indexes.
-    var indices: [NUMBER_OF_LINES]u32 = std.simd.iota(u32, NUMBER_OF_LINES);
-    random.shuffle(u32, &indices);
+    // Generate a shuffled list of {0,1,...,NUMBER_OF_LINES - 1}.
+    var option_indices: [NUMBER_OF_LINES]u32 = std.simd.iota(u32, NUMBER_OF_LINES);
+    random.shuffle(u32, &option_indices);
 
-    var i: u32 = 1;
-    for (indices) |index| {
-        if (index == solution_index) continue;
-        current_text_options[i] = index;
-        i += 1;
-        if (i == 4) break;
+    // Fill in the other button options from the shuffled list.
+    var option_index: u32 = 0;
+    for (1..4) |i| {
+        if (solution_index == option_indices[option_index]) option_index += 1;
+        current_text_options[i] = option_indices[option_index];
+        option_index += 1;
     }
-
     random.shuffle(u32, &current_text_options);
 }
+
+// Create a custom Raylib color since apparently it can't be initialized using
+// {r,g,b,a} syntax.
 
 fn rlc(r : u8, g : u8, b : u8) rl.Color {
     const rlcolor = rl.Color{
