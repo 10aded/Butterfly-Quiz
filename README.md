@@ -12,9 +12,9 @@ Since the Zig compiler comes with its own build system, the project can be built
 
 `zig build run`
 
-(when called from a terminal / shell within the top directory of the project). A release build can be created with the command
+(when called from a terminal / shell within the top directory of the project). A release build can be created with the following command.
 
-`zig build -Doptimize=ReleaseFast`.
+`zig build -Doptimize=ReleaseFast`
 
 The project was built with the Zig 0.11.0 compiler on Windows 11, available from the [download page](https://ziglang.org/download/) on `ziglang.org`. Compilation of the app on other operating systems has not been tested.
 
@@ -26,7 +26,7 @@ The list of butterflies was taken from the book *Familiar Butterflies of North A
 
 ## Dependencies
 
-The project is written in Zig using the raylib library. We included the necessary source files from this in our project under the raylib directory, but deleted unnecessary parts of it (like its numerous examples). The files from it than are included are from commit number 710e81.
+The project is written in Zig and uses the raylib library. We included the necessary source files from raylib directly in our project (under the raylib directory), but deleted unnecessary parts of the library (like its numerous examples). The files from it than are included are from commit number 710e81.
 
 Raylib is created by Ramon Santamaria (GitHub handle [@raysan5](https://github.com/raysan5)) and is available on GitHub [here](https://github.com/raysan5/raylib). See the link above for Raylib's full license / copywrite details.
 
