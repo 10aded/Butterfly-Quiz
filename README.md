@@ -1,6 +1,6 @@
 This is a simple quiz game / app to help the player learn common butterflies native to North America.
 
-![Screenshot](screenshot.png)
+![Screenshot](screenshot.png "A screenshot from the app."){width="960"}
 
 ### Build Instructions
 
@@ -16,7 +16,7 @@ The project was built with the Zig 0.11.0 compiler, available from the [download
 
 ### Photo Information
 
-All photos in this project are from [Wikimedia Commons](https://commons.wikimedia.org/wiki/Main_Page). As such, they have all been released under various Creative Commons / Public Domain licenses. Links to the sources of these photos, their authors, and to the exact licenses of the photos can be found in the [photo-source-license-links.csv](photo-source-license-links.csv) file.
+All photos in this project are from [Wikimedia Commons](https://commons.wikimedia.org/wiki/Main_Page). As such, they have all been released under various Creative Commons / Public Domain licenses. Links to the sources of these photos, their authors, and to the exact licenses of the photos can be found in the [photo-source-license-links.csv](photo-source-license-links.csv) file. We recommend using *Modern CSV* ([webpage](https://www.moderncsv.com/)) to view the `.csv` file.
 
 The list of butterflies was taken from the book *Familiar Butterflies of North America* (National Audubon Society, 1990, Knopf, ISBN: `978-0-679-72981-5`). By default, the order of butterflies that appear in the quiz are randomized, but if they were to appear sequentially (as in the `.csv` file), they would appear in the same order as the do in the book.
 
