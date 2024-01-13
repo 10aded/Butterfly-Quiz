@@ -1,4 +1,4 @@
-#Butterfly Quiz
+# Butterfly Quiz
 
 This is a simple quiz game / app to help the player learn common butterflies native to North America, written from scratch in Zig/raylib.
 
