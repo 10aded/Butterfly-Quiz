@@ -36,7 +36,7 @@ const rl  = @cImport(@cInclude("raylib.h"));
 const PHOTO_INFO_FILENAME = "photo-source-license-links.csv";
 
 // The path of the font file, embedded at comptime.
-const merriweather_ttf  : [:0] const u8 = @embedFile("Merriweather-Regular.ttf");
+const merriweather_ttf  : [:0] const u8 = @embedFile("./Font/Merriweather-Regular.ttf");
 
 const Vec2   = @Vector(2, f32);
 
