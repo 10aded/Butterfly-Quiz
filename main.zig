@@ -1,6 +1,8 @@
 // This is a simple quiz game / app to help learn common butterflies
 // native to North America.
 //
+// Created by 10aded with help from tw0st3p from Dec 2023 - Jan 2024.
+//
 // This project was compiled using the Zig compiler (version 0.11.0)
 // and built with the command:
 //
