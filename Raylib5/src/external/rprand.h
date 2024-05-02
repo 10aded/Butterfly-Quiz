@@ -200,7 +200,8 @@ int *rprand_load_sequence(unsigned int count, int min, int max)
 
     for (unsigned int i = 0; i < count;)
     {
-        value = ((unsigned int)rprand_xoshiro()%(abs(max - min) + 1)) + min;
+        value = ((int)rprand_xoshiro()%(abs(max - min) + 1)) + min;
+        value_is_dup = false;
 
         for (int j = 0; j < i; j++)
         {
@@ -216,8 +217,6 @@ int *rprand_load_sequence(unsigned int count, int min, int max)
             sequence[i] = value;
             i++;
         }
-
-        value_is_dup = false;
     }
 
     return sequence;

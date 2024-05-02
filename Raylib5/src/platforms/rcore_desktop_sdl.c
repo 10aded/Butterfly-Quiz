@@ -48,14 +48,8 @@
 *
 **********************************************************************************************/
 
-#include "SDL.h"                // SDL base library (window/rendered, input, timing... functionality)
-
-#if defined(GRAPHICS_API_OPENGL_ES2)
-    // It seems it does not need to be included to work
-    //#include "SDL_opengles2.h"
-#else
-    #include "SDL_opengl.h"     // SDL OpenGL functionality (if required, instead of internal renderer)
-#endif
+#include "SDL.h"            // SDL base library (window/rendered, input, timming... functionality)
+#include "SDL_opengl.h"     // SDL OpenGL functionality (if required, instead of internal renderer)
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -499,9 +493,9 @@ void SetWindowIcon(Image image)
             bmask = 0x001F, amask = 0;
             depth = 16, pitch = image.width * 2;
             break;
-        case PIXELFORMAT_UNCOMPRESSED_R8G8B8: // Uses BGR for 24-bit
-            rmask = 0x0000FF, gmask = 0x00FF00;
-            bmask = 0xFF0000, amask = 0;
+        case PIXELFORMAT_UNCOMPRESSED_R8G8B8:
+            rmask = 0xFF0000, gmask = 0x00FF00;
+            bmask = 0x0000FF, amask = 0;
             depth = 24, pitch = image.width * 3;
             break;
         case PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
@@ -598,7 +592,7 @@ void SetWindowMonitor(int monitor)
         // NOTE:
         // 1. SDL started supporting moving exclusive fullscreen windows between displays on SDL3,
         //    see commit https://github.com/libsdl-org/SDL/commit/3f5ef7dd422057edbcf3e736107e34be4b75d9ba
-        // 2. A workaround for SDL2 is leaving fullscreen, moving the window, then entering full screen again.
+        // 2. A workround for SDL2 is leaving fullscreen, moving the window, then entering full screen again.
         const bool wasFullscreen = ((CORE.Window.flags & FLAG_FULLSCREEN_MODE) > 0) ? true : false;
 
         const int screenWidth = CORE.Window.screen.width;
@@ -617,7 +611,7 @@ void SetWindowMonitor(int monitor)
                 //    ending up positioned partly outside the target display.
                 // 2. The workaround for that is, previously to moving the window,
                 //    setting the window size to the target display size, so they match.
-                // 3. It wasn't done here because we can't assume changing the window size automatically
+                // 3. It was't done here because we can't assume changing the window size automatically
                 //    is acceptable behavior by the user.
                 SDL_SetWindowPosition(platform.window, usableBounds.x, usableBounds.y);
                 CORE.Window.position.x = usableBounds.x;
@@ -941,8 +935,6 @@ int SetGamepadMappings(const char *mappings)
 // Set mouse position XY
 void SetMousePosition(int x, int y)
 {
-    SDL_WarpMouseInWindow(platform.window, x, y);
-
     CORE.Input.Mouse.currentPosition = (Vector2){ (float)x, (float)y };
     CORE.Input.Mouse.previousPosition = CORE.Input.Mouse.currentPosition;
 }
@@ -968,6 +960,9 @@ void PollInputEvents(void)
     // Reset keys/chars pressed registered
     CORE.Input.Keyboard.keyPressedQueueCount = 0;
     CORE.Input.Keyboard.charPressedQueueCount = 0;
+
+    // Reset key repeats
+    for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) CORE.Input.Keyboard.keyRepeatInFrame[i] = 0;
 
     // Reset mouse wheel
     CORE.Input.Mouse.currentWheelMove.x = 0;
@@ -996,7 +991,7 @@ void PollInputEvents(void)
     CORE.Input.Touch.position[0] = CORE.Input.Mouse.currentPosition;
 
     int touchAction = -1;       // 0-TOUCH_ACTION_UP, 1-TOUCH_ACTION_DOWN, 2-TOUCH_ACTION_MOVE
-    bool realTouch = false;     // Flag to differentiate real touch gestures from mouse ones
+    bool gestureUpdate = false; // Flag to note gestures require to update
 
     // Register previous keys states
     // NOTE: Android supports up to 260 keys
@@ -1009,7 +1004,7 @@ void PollInputEvents(void)
     // Register previous mouse states
     for (int i = 0; i < MAX_MOUSE_BUTTONS; i++) CORE.Input.Mouse.previousButtonState[i] = CORE.Input.Mouse.currentButtonState[i];
 
-    // Poll input events for current platform
+    // Poll input events for current plaform
     //-----------------------------------------------------------------------------
     /*
     // WARNING: Indexes into this array are obtained by using SDL_Scancode values, not SDL_Keycode values
@@ -1094,8 +1089,6 @@ void PollInputEvents(void)
                 KeyboardKey key = ConvertScancodeToKey(event.key.keysym.scancode);
                 if (key != KEY_NULL) CORE.Input.Keyboard.currentKeyState[key] = 1;
 
-                if (event.key.repeat) CORE.Input.Keyboard.keyRepeatInFrame[key] = 1;
-
                 // TODO: Put exitKey verification outside the switch?
                 if (CORE.Input.Keyboard.currentKeyState[CORE.Input.Keyboard.exitKey])
                 {
@@ -1109,29 +1102,6 @@ void PollInputEvents(void)
                 if (key != KEY_NULL) CORE.Input.Keyboard.currentKeyState[key] = 0;
             } break;
 
-            case SDL_TEXTINPUT:
-            {
-                // NOTE: event.text.text data comes an UTF-8 text sequence but we register codepoints (int)
-
-                int codepointSize = 0;
-
-                // Check if there is space available in the key queue
-                if (CORE.Input.Keyboard.keyPressedQueueCount < MAX_KEY_PRESSED_QUEUE)
-                {
-                    // Add character (key) to the queue
-                    CORE.Input.Keyboard.keyPressedQueue[CORE.Input.Keyboard.keyPressedQueueCount] = GetCodepointNext(event.text.text, &codepointSize);
-                    CORE.Input.Keyboard.keyPressedQueueCount++;
-                }
-
-                // Check if there is space available in the queue
-                if (CORE.Input.Keyboard.charPressedQueueCount < MAX_CHAR_PRESSED_QUEUE)
-                {
-                    // Add character (codepoint) to the queue
-                    CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] = GetCodepointNext(event.text.text, &codepointSize);
-                    CORE.Input.Keyboard.charPressedQueueCount++;
-                }
-            } break;
-
             // Check mouse events
             case SDL_MOUSEBUTTONDOWN:
             {
@@ -1142,9 +1112,9 @@ void PollInputEvents(void)
                 else if (btn == 1) btn = 2;
 
                 CORE.Input.Mouse.currentButtonState[btn] = 1;
-                CORE.Input.Touch.currentTouchState[btn] = 1;
 
                 touchAction = 1;
+                gestureUpdate = true;
             } break;
             case SDL_MOUSEBUTTONUP:
             {
@@ -1155,9 +1125,9 @@ void PollInputEvents(void)
                 else if (btn == 1) btn = 2;
 
                 CORE.Input.Mouse.currentButtonState[btn] = 0;
-                CORE.Input.Touch.currentTouchState[btn] = 0;
 
                 touchAction = 0;
+                gestureUpdate = true;
             } break;
             case SDL_MOUSEWHEEL:
             {
@@ -1180,38 +1150,7 @@ void PollInputEvents(void)
 
                 CORE.Input.Touch.position[0] = CORE.Input.Mouse.currentPosition;
                 touchAction = 2;
-            } break;
-
-            // Check touch events
-            // NOTE: These cases need to be reviewed on a real touch screen
-            case SDL_FINGERDOWN:
-            {
-                const int touchId = (int)event.tfinger.fingerId;
-                CORE.Input.Touch.currentTouchState[touchId] = 1;
-                CORE.Input.Touch.position[touchId].x = event.tfinger.x * CORE.Window.screen.width;
-                CORE.Input.Touch.position[touchId].y = event.tfinger.y * CORE.Window.screen.height;
-
-                touchAction = 1;
-                realTouch = true;
-            } break;
-            case SDL_FINGERUP:
-            {
-                const int touchId = (int)event.tfinger.fingerId;
-                CORE.Input.Touch.currentTouchState[touchId] = 0;
-                CORE.Input.Touch.position[touchId].x = event.tfinger.x * CORE.Window.screen.width;
-                CORE.Input.Touch.position[touchId].y = event.tfinger.y * CORE.Window.screen.height;
-
-                touchAction = 0;
-                realTouch = true;
-            } break;
-            case SDL_FINGERMOTION:
-            {
-                const int touchId = (int)event.tfinger.fingerId;
-                CORE.Input.Touch.position[touchId].x = event.tfinger.x * CORE.Window.screen.width;
-                CORE.Input.Touch.position[touchId].y = event.tfinger.y * CORE.Window.screen.height;
-
-                touchAction = 2;
-                realTouch = true;
+                gestureUpdate = true;
             } break;
 
             // Check gamepad events
@@ -1236,7 +1175,7 @@ void PollInputEvents(void)
         }
 
 #if defined(SUPPORT_GESTURES_SYSTEM)
-        if (touchAction > -1)
+        if (gestureUpdate)
         {
             // Process mouse events as touches to be able to use mouse-gestures
             GestureEvent gestureEvent = { 0 };
@@ -1251,7 +1190,7 @@ void PollInputEvents(void)
             gestureEvent.pointCount = 1;
 
             // Register touch points position, only one point registered
-            if (touchAction == 2 || realTouch) gestureEvent.position[0] = CORE.Input.Touch.position[0];
+            if (touchAction == 2) gestureEvent.position[0] = CORE.Input.Touch.position[0];
             else gestureEvent.position[0] = GetMousePosition();
 
             // Normalize gestureEvent.position[0] for CORE.Window.screen.width and CORE.Window.screen.height
@@ -1260,8 +1199,6 @@ void PollInputEvents(void)
 
             // Gesture data is sent to gestures-system for processing
             ProcessGestureEvent(gestureEvent);
-
-            touchAction = -1;
         }
 #endif
     }
@@ -1373,7 +1310,7 @@ int InitPlatform(void)
     // Init OpenGL context
     platform.glContext = SDL_GL_CreateContext(platform.window);
 
-    // Check window and glContext have been initialized successfully
+    // Check window and glContext have been initialized succesfully
     if ((platform.window != NULL) && (platform.glContext != NULL))
     {
         CORE.Window.ready = true;
@@ -1414,22 +1351,13 @@ int InitPlatform(void)
         //if (platform.gamepadgamepad == NULL) TRACELOG(LOG_WARNING, "PLATFORM: Unable to open game controller [ERROR: %s]", SDL_GetError());
     }
 
-    // Disable mouse events being interpreted as touch events
-    // NOTE: This is wanted because there are SDL_FINGER* events available which provide unique data
-    //       Due to the way PollInputEvents() and rgestures.h are currently implemented, setting this won't break SUPPORT_MOUSE_GESTURES
-    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-
     SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
     //----------------------------------------------------------------------------
 
-    // Initialize timing system
+    // Initialize timming system
     //----------------------------------------------------------------------------
     // NOTE: No need to call InitTimer(), let SDL manage it internally
     CORE.Time.previous = GetTime();     // Get time as double
-
-    #if defined(_WIN32) && defined(SUPPORT_WINMM_HIGHRES_TIMER) && !defined(SUPPORT_BUSY_WAIT_LOOP)
-    SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "1");     // SDL equivalent of timeBeginPeriod() and timeEndPeriod()
-    #endif
     //----------------------------------------------------------------------------
 
     // Initialize storage system

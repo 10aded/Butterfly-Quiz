@@ -213,14 +213,14 @@
 #define STBIR_MALLOC(size,c) ((void)(c), RL_MALLOC(size))
 #define STBIR_FREE(ptr,c) ((void)(c), RL_FREE(ptr))
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "external/stb_image_resize2.h"     // Required for: stbir_resize_uint8_linear() [ImageResize()]
+#include "external/stb_image_resize2.h"  // Required for: stbir_resize_uint8_linear() [ImageResize()]
 
 #if defined(SUPPORT_FILEFORMAT_SVG)
-    #define NANOSVG_IMPLEMENTATION          // Expands implementation
-    #include "external/nanosvg.h"
+	#define NANOSVG_IMPLEMENTATION	// Expands implementation
+	#include "external/nanosvg.h"
 
-    #define NANOSVGRAST_IMPLEMENTATION
-    #include "external/nanosvgrast.h"
+	#define NANOSVGRAST_IMPLEMENTATION
+	#include "external/nanosvgrast.h"
 #endif
 
 //----------------------------------------------------------------------------------
@@ -431,45 +431,6 @@ Image LoadImageAnim(const char *fileName, int *frames)
     else
     {
         image = LoadImage(fileName);
-        frameCount = 1;
-    }
-
-    *frames = frameCount;
-    return image;
-}
-
-// Load animated image data
-//  - Image.data buffer includes all frames: [image#0][image#1][image#2][...]
-//  - Number of frames is returned through 'frames' parameter
-//  - All frames are returned in RGBA format
-//  - Frames delay data is discarded
-Image LoadImageAnimFromMemory(const char *fileType, const unsigned char *fileData, int dataSize, int *frames)
-{
-    Image image = { 0 };
-    int frameCount = 0;
-
-#if defined(SUPPORT_FILEFORMAT_GIF)
-    if ((strcmp(fileType, ".gif") == 0) || (strcmp(fileType, ".GIF") == 0))
-    {
-        if (fileData != NULL)
-        {
-            int comp = 0;
-            int *delays = NULL;
-            image.data = stbi_load_gif_from_memory(fileData, dataSize, &delays, &image.width, &image.height, &frameCount, &comp, 4);
-
-            image.mipmaps = 1;
-            image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-
-            RL_FREE(fileData);
-            RL_FREE(delays);        // NOTE: Frames delays are discarded
-        }
-    }
-#else
-    if (false) { }
-#endif
-    else
-    {
-        image = LoadImageFromMemory(fileType,fileData,dataSize);
         frameCount = 1;
     }
 
@@ -1998,9 +1959,9 @@ void ImageBlurGaussian(Image *image, int blurSize) {
             float avgG = 0.0f;
             float avgB = 0.0f;
             float avgAlpha = 0.0f;
-            int convolutionSize = blurSize;
+            int convolutionSize = blurSize+1;
 
-            for (int i = 0; i < blurSize; i++)
+            for (int i = 0; i < blurSize+1; i++)
             {
                 avgR += pixelsCopy1[row*image->width + i].x;
                 avgG += pixelsCopy1[row*image->width + i].y;
@@ -2008,14 +1969,19 @@ void ImageBlurGaussian(Image *image, int blurSize) {
                 avgAlpha += pixelsCopy1[row*image->width + i].w;
             }
 
-            for (int x = 0; x < image->width; x++)
+            pixelsCopy2[row*image->width].x = avgR/convolutionSize;
+            pixelsCopy2[row*image->width].y = avgG/convolutionSize;
+            pixelsCopy2[row*image->width].z = avgB/convolutionSize;
+            pixelsCopy2[row*image->width].w = avgAlpha/convolutionSize;
+
+            for (int x = 1; x < image->width; x++)
             {
-                if (x-blurSize-1 >= 0)
+                if (x-blurSize >= 0)
                 {
-                    avgR -= pixelsCopy1[row*image->width + x-blurSize-1].x;
-                    avgG -= pixelsCopy1[row*image->width + x-blurSize-1].y;
-                    avgB -= pixelsCopy1[row*image->width + x-blurSize-1].z;
-                    avgAlpha -= pixelsCopy1[row*image->width + x-blurSize-1].w;
+                    avgR -= pixelsCopy1[row*image->width + x-blurSize].x;
+                    avgG -= pixelsCopy1[row*image->width + x-blurSize].y;
+                    avgB -= pixelsCopy1[row*image->width + x-blurSize].z;
+                    avgAlpha -= pixelsCopy1[row*image->width + x-blurSize].w;
                     convolutionSize--;
                 }
 
@@ -2033,7 +1999,7 @@ void ImageBlurGaussian(Image *image, int blurSize) {
                 pixelsCopy2[row*image->width + x].z = avgB/convolutionSize;
                 pixelsCopy2[row*image->width + x].w = avgAlpha/convolutionSize;
             }
-        }
+                }
 
         // Vertical motion blur
         for (int col = 0; col < image->width; col++)
@@ -2042,9 +2008,9 @@ void ImageBlurGaussian(Image *image, int blurSize) {
             float avgG = 0.0f;
             float avgB = 0.0f;
             float avgAlpha = 0.0f;
-            int convolutionSize = blurSize;
+            int convolutionSize = blurSize+1;
 
-            for (int i = 0; i < blurSize; i++)
+            for (int i = 0; i < blurSize+1; i++)
             {
                 avgR += pixelsCopy2[i*image->width + col].x;
                 avgG += pixelsCopy2[i*image->width + col].y;
@@ -2052,14 +2018,19 @@ void ImageBlurGaussian(Image *image, int blurSize) {
                 avgAlpha += pixelsCopy2[i*image->width + col].w;
             }
 
-            for (int y = 0; y < image->height; y++)
+            pixelsCopy1[col].x = (unsigned char) (avgR/convolutionSize);
+            pixelsCopy1[col].y = (unsigned char) (avgG/convolutionSize);
+            pixelsCopy1[col].z = (unsigned char) (avgB/convolutionSize);
+            pixelsCopy1[col].w = (unsigned char) (avgAlpha/convolutionSize);
+
+            for (int y = 1; y < image->height; y++)
             {
-                if (y-blurSize-1 >= 0)
+                if (y-blurSize >= 0)
                 {
-                    avgR -= pixelsCopy2[(y-blurSize-1)*image->width + col].x;
-                    avgG -= pixelsCopy2[(y-blurSize-1)*image->width + col].y;
-                    avgB -= pixelsCopy2[(y-blurSize-1)*image->width + col].z;
-                    avgAlpha -= pixelsCopy2[(y-blurSize-1)*image->width + col].w;
+                    avgR -= pixelsCopy2[(y-blurSize)*image->width + col].x;
+                    avgG -= pixelsCopy2[(y-blurSize)*image->width + col].y;
+                    avgB -= pixelsCopy2[(y-blurSize)*image->width + col].z;
+                    avgAlpha -= pixelsCopy2[(y-blurSize)*image->width + col].w;
                     convolutionSize--;
                 }
                 if (y+blurSize < image->height)
@@ -2108,148 +2079,6 @@ void ImageBlurGaussian(Image *image, int blurSize) {
     image->data = pixels;
     image->format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
 
-    ImageFormat(image, format);
-}
-
-// The kernel matrix is assumed to be square. Only supply the width of the kernel.
-void ImageKernelConvolution(Image *image, float* kernel, int kernelSize){
-
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0) || kernel == NULL) return;
-
-    int kernelWidth = (int)sqrtf((float)kernelSize);
-    if (kernelWidth*kernelWidth != kernelSize)
-    {
-        TRACELOG(LOG_WARNING, "IMAGE: Convolution kernel must be square to be applied");
-        return;
-    }
-
-    Color *pixels = LoadImageColors(*image);
-
-    Vector4 *imageCopy2 = RL_MALLOC((image->height)*(image->width)*sizeof(Vector4));
-    Vector4 *temp = RL_MALLOC(kernelSize*sizeof(Vector4));
-
-
-    for(int i = 0; i < kernelSize; i++){
-        temp[i].x = 0.0f;
-        temp[i].y = 0.0f;
-        temp[i].z = 0.0f;
-        temp[i].w = 0.0f;
-    }
-
-    float rRes = 0.0f;
-    float gRes = 0.0f;
-    float bRes = 0.0f;
-    float aRes = 0.0f;
-
-
-    int startRange, endRange;
-    if(kernelWidth % 2 == 0)
-    {
-        startRange = -kernelWidth/2;
-        endRange = kernelWidth/2;
-    } else
-    {
-        startRange = -kernelWidth/2;
-        endRange = kernelWidth/2+1;
-    }
-    for(int x = 0; x < image->height; x++)
-    {
-        for(int y = 0; y < image->width; y++)
-        {
-
-            for(int xk = startRange; xk < endRange; xk++)
-            {
-                for(int yk = startRange; yk < endRange; yk++)
-                {
-                    int xkabs = xk + kernelWidth/2;
-                    int ykabs = yk + kernelWidth/2;
-                    size_t imgindex = image->width * (x+xk) + (y+yk);
-                    if(imgindex < 0 || imgindex >= image->width * image->height){
-                        temp[kernelWidth * xkabs + ykabs].x = 0.0f;
-                        temp[kernelWidth * xkabs + ykabs].y = 0.0f;
-                        temp[kernelWidth * xkabs + ykabs].z = 0.0f;
-                        temp[kernelWidth * xkabs + ykabs].w = 0.0f;
-                    } else {
-                        temp[kernelWidth * xkabs + ykabs].x = ((float)pixels[imgindex].r)/255.0f * kernel[kernelWidth * xkabs + ykabs];
-                        temp[kernelWidth * xkabs + ykabs].y = ((float)pixels[imgindex].g)/255.0f * kernel[kernelWidth * xkabs + ykabs];
-                        temp[kernelWidth * xkabs + ykabs].z = ((float)pixels[imgindex].b)/255.0f * kernel[kernelWidth * xkabs + ykabs];
-                        temp[kernelWidth * xkabs + ykabs].w = ((float)pixels[imgindex].a)/255.0f * kernel[kernelWidth * xkabs + ykabs];
-                    }
-                }
-            }
-
-            for(int i = 0; i < kernelSize; i++)
-            {
-                rRes += temp[i].x;
-                gRes += temp[i].y;
-                bRes += temp[i].z;
-                aRes += temp[i].w;
-            }
-
-            if(rRes < 0.0f)
-            {
-                rRes = 0.0f;
-            }
-            if(gRes < 0.0f)
-            {
-                gRes = 0.0f;
-            }
-            if(bRes < 0.0f)
-            {
-                bRes = 0.0f;
-            }
-
-            if(rRes > 1.0f)
-            {
-                rRes = 1.0f;
-            }
-            if(gRes > 1.0f)
-            {
-                gRes = 1.0f;
-            }
-             if(bRes > 1.0f)
-            {
-                bRes = 1.0f;
-            }
-
-            imageCopy2[image->width * (x) + (y)].x = rRes;
-            imageCopy2[image->width * (x) + (y)].y = gRes;
-            imageCopy2[image->width * (x) + (y)].z = bRes;
-            imageCopy2[image->width * (x) + (y)].w = aRes;
-
-            rRes = 0.0f;
-            gRes = 0.0f;
-            bRes = 0.0f;
-            aRes = 0.0f;
-
-            for(int i = 0; i < kernelSize; i++)
-            {
-                temp[i].x = 0.0f;
-                temp[i].y = 0.0f;
-                temp[i].z = 0.0f;
-                temp[i].w = 0.0f;
-            }
-        }
-    }
-
-    for (int i = 0; i < (image->width) * (image->height); i++)
-    {
-        float alpha = (float)imageCopy2[i].w;
-        pixels[i].r = (unsigned char)((imageCopy2[i].x)*255.0f);
-        pixels[i].g = (unsigned char)((imageCopy2[i].y)*255.0f);
-        pixels[i].b = (unsigned char)((imageCopy2[i].z)*255.0f);
-        pixels[i].a = (unsigned char)((alpha)*255.0f);
-        // printf("pixels[%d] = %d", i, pixels[i].r);
-    }
-
-
-    int format = image->format;
-    RL_FREE(image->data);
-    RL_FREE(imageCopy2);
-    RL_FREE(temp);
-
-    image->data = pixels;
-    image->format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
     ImageFormat(image, format);
 }
 
@@ -3735,7 +3564,7 @@ void ImageDraw(Image *dst, Image src, Rectangle srcRec, Rectangle dstRec, Color 
 // Draw text (default font) within an image (destination)
 void ImageDrawText(Image *dst, const char *text, int posX, int posY, int fontSize, Color color)
 {
-#if defined(SUPPORT_MODULE_RTEXT) && defined(SUPPORT_DEFAULT_FONT)
+#if defined(SUPPORT_MODULE_RTEXT)
     // Make sure default font is loaded to be used on image text drawing
     if (GetFontDefault().texture.id == 0) LoadFontDefault();
 
@@ -3817,9 +3646,7 @@ TextureCubemap LoadTextureCubemap(Image image, int layout)
             if ((image.height/6) == image.width) { layout = CUBEMAP_LAYOUT_LINE_VERTICAL; cubemap.width = image.height/6; }
             else if ((image.width/3) == (image.height/4)) { layout = CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR; cubemap.width = image.width/3; }
         }
-    }
-    else
-    {
+    } else {
         if (layout == CUBEMAP_LAYOUT_LINE_VERTICAL) cubemap.width = image.height/6;
         if (layout == CUBEMAP_LAYOUT_LINE_HORIZONTAL) cubemap.width = image.width/6;
         if (layout == CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR) cubemap.width = image.width/3;
@@ -3836,7 +3663,6 @@ TextureCubemap LoadTextureCubemap(Image image, int layout)
 
         Image faces = { 0 };                // Vertical column image
         Rectangle faceRecs[6] = { 0 };      // Face source rectangles
-
         for (int i = 0; i < 6; i++) faceRecs[i] = (Rectangle){ 0, 0, (float)size, (float)size };
 
         if (layout == CUBEMAP_LAYOUT_LINE_VERTICAL)
@@ -3883,7 +3709,6 @@ TextureCubemap LoadTextureCubemap(Image image, int layout)
         // one after the other (that's a vertical image), following convention: +X, -X, +Y, -Y, +Z, -Z
         cubemap.id = rlLoadTextureCubemap(faces.data, size, faces.format);
         if (cubemap.id == 0) TRACELOG(LOG_WARNING, "IMAGE: Failed to load cubemap image");
-        else cubemap.mipmaps = 1;
 
         UnloadImage(faces);
     }
