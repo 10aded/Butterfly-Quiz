@@ -3,12 +3,16 @@
 //
 // Created by 10aded with help from tw0st3p from Dec 2023 - Jan 2024.
 //
-// This project was compiled using the Zig compiler (version 0.11.0)
-// and built with the command:
+// The project is built with the command:
 //
 //     zig build -Doptimize=ReleaseFast
 //
 // run in the top directory of the project.
+//
+// Building the project requires the compiler version to be 0.12.0 at minimum.
+// 
+// The project was originally built with the Zig 0.11.0 compiler, and
+// was updated to work with 0.12.0 of the compiler on 2 May 2024.
 //
 // The entire source code of this project is available on GitHub at:
 //
@@ -21,11 +25,11 @@
 // have all be released under various Creative Commons / Public Domain licenses.
 // See the README for more information and links to the image sources / licenses.
 //
-// This project includes a copy of raylib, specifically commit number 710e81.
+// This project includes a portion of raylib, specifically v5.0 (commit number ae50bfa).
 //
-// Raylib is created by github user Ray (@github handle raysan5) and available at:
+// Raylib is created by github user Ray (github handle raysan5) and available at:
 //
-//    https://github.com/raysan5
+//    https://github.com/raysan5/raylib/
 //
 // See the pages above for full license details.
 
