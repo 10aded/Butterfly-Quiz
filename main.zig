@@ -55,14 +55,16 @@ const Vec2   = @Vector(2, f32);
 // respectively.
 
 // UI Colors
-const BLACK     = rlc(  0,   0,   0);
-const WHITE     = rlc(255, 255, 255);
-const LBLUE1    = rlc(195, 220, 229);
-const LBLUE2    = rlc(163, 190, 204);
-const PURPLE1   = rlc( 81,  78,  93);
-const PURPLE2   = rlc( 58,  55,  65);
-const DARKGRAY1 = rlc( 54,  57,  64);
-const DARKGRAY2 = rlc( 34,  36,  38);
+const Color = [4] u8;
+
+const BLACK      : rl.Color = @bitCast(Color{  0,   0,   0, 255});
+const WHITE      : rl.Color = @bitCast(Color{255, 255, 255, 255});
+const LBLUE1     : rl.Color = @bitCast(Color{195, 220, 229, 255});
+const LBLUE2     : rl.Color = @bitCast(Color{163, 190, 204, 255});
+const PURPLE1    : rl.Color = @bitCast(Color{ 81,  78,  93, 255});
+const PURPLE2    : rl.Color = @bitCast(Color{ 58,  55,  65, 255});
+const DARKGRAY1  : rl.Color = @bitCast(Color{ 54,  57,  64, 255});
+const DARKGRAY2  : rl.Color = @bitCast(Color{ 34,  36,  38, 255});
 
 const background_color               = DARKGRAY1;
 const button_border_color_unselected = BLACK;
@@ -499,7 +501,7 @@ fn process_input_update_state() void {
     // Compute when the mouse is hovering over a button.
     for (button_positions, 0..) |pos, i| {
         const center_diff = pos - mouse_pos;
-        button_hover[i] = abs(center_diff[0]) <= 0.5 * button_width and abs(center_diff[1]) <= 0.5 * button_height;
+        button_hover[i] = @abs(center_diff[0]) <= 0.5 * button_width and @abs(center_diff[1]) <= 0.5 * button_height;
     }
 
     // Determine a button has been clicked, and if so, what its index is.
@@ -557,27 +559,4 @@ fn update_button_options(solution_index : u32) void {
         option_index += 1;
     }
     random.shuffle(u32, &current_text_options);
-}
-
-// Create a custom Raylib color since apparently it can't be initialized using
-// {r,g,b,a} syntax.
-
-fn rlc(r : u8, g : u8, b : u8) rl.Color {
-    const rlcolor = rl.Color{
-        .r = r,
-        .g = g,
-        .b = b,
-        .a = 255,
-    };
-    return rlcolor;
-}
-
-// In Zig version 0.11.0, the builtin function @abs is not available, (although
-// it seems like it will be available in Zig version 0.12.0).
-// So this is just a crude absolute value function.
-// We know there are more efficient ways to do this (like e.g. those in
-// Hacker's Delight by Warren), but this is a simple app so don't @ me!
-
-fn abs(x : f32) f32 {
-    return if (x >= 0) x else -x;
 }
