@@ -12,7 +12,7 @@
 // Building the project requires the compiler version to be 0.12.0 at minimum.
 // 
 // The project was originally built with the Zig 0.11.0 compiler, and
-// was updated to work with 0.12.0 of the compiler on 2 May 2024.
+// was updated to work with 0.13.0 of the compiler on 17 June 2024.
 //
 // The entire source code of this project is available on GitHub at:
 //

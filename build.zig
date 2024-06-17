@@ -11,7 +11,7 @@ const LazyPath    = std.Build.LazyPath;
 // , and other code that we have seen do this in Semantic Version seems way more
 // messy than it should be.
 
-const compiler_version_min  = @Vector(3, usize) {0, 12, 0};
+const compiler_version_min  = @Vector(3, usize) {0, 13, 0};
 const compiler_version_curr = @Vector(3, usize) {builtin.zig_version.major, builtin.zig_version.minor, builtin.zig_version.patch};
 
 const compiler_version_min_str  = std.fmt.comptimePrint("{d}.{d}.{d}", .{compiler_version_min[0], compiler_version_min[1], compiler_version_min[2]});
@@ -19,11 +19,11 @@ const compiler_version_curr_str = std.fmt.comptimePrint("{d}.{d}.{d}", .{compile
 
 pub fn order_compiler(left : @Vector(3, usize), right : @Vector(3, usize)) std.math.Order {
     if (left[0] < right[0]) return .lt;
-    if (left[0] < right[0]) return .gt;
+    if (left[0] > right[0]) return .gt;
     if (left[1] < right[1]) return .lt;
-    if (left[1] < right[1]) return .gt;
+    if (left[1] > right[1]) return .gt;
     if (left[2] < right[2]) return .lt;
-    if (left[2] < right[2]) return .gt;
+    if (left[2] > right[2]) return .gt;
     return .eq;
 }
 
@@ -46,12 +46,17 @@ pub fn build(b: *std.Build) void {
 
 	const exe = b.addExecutable(.{
 		.name = "butterfly-quiz",
-		.root_source_file = .{ .path = "main.zig" },
+		.root_source_file = b.path("main.zig"),
 		.target = target,
 		.optimize = optimize,
 	});
 
-	b.installArtifact(exe);
+    // Usually this is b.installArtifact(exe), but that is just the line below
+    // with default options.
+    const install_artifact = b.addInstallArtifact(exe, .{
+        .dest_dir = .{ .override = .prefix },
+    });
+    b.getInstallStep().dependOn(&install_artifact.step);
 
     const raylib = addRaylib(b, target, optimize, false);
 
@@ -129,7 +134,7 @@ pub fn addRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
             raylib.linkSystemLibrary("winmm");
             raylib.linkSystemLibrary("gdi32");
             raylib.linkSystemLibrary("opengl32");
-            raylib.addIncludePath(.{ .path = "external/glfw/deps/mingw" });
+            raylib.addIncludePath(b.path("external/glfw/deps/mingw"));
 
             raylib.defineCMacro("PLATFORM_DESKTOP", null);
         },
@@ -141,8 +146,8 @@ pub fn addRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
                 raylib.linkSystemLibrary("dl");
                 raylib.linkSystemLibrary("m");
                 raylib.linkSystemLibrary("X11");
-                raylib.addLibraryPath(.{ .path = "/usr/lib" });
-                raylib.addIncludePath(.{ .path = "/usr/include" });
+                raylib.addLibraryPath(b.path("/usr/lib"));
+                raylib.addIncludePath(b.path("/usr/include"));
 
                 raylib.defineCMacro("PLATFORM_DESKTOP", null);
             } else {
@@ -154,7 +159,7 @@ pub fn addRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
                 raylib.linkSystemLibrary("rt");
                 raylib.linkSystemLibrary("m");
                 raylib.linkSystemLibrary("dl");
-                raylib.addIncludePath(.{ .path = "/usr/include/libdrm" });
+                    raylib.addIncludePath(b.path("/usr/include/libdrm"));
 
                 raylib.defineCMacro("PLATFORM_DRM", null);
                 raylib.defineCMacro("GRAPHICS_API_OPENGL_ES2", null);
@@ -206,7 +211,7 @@ pub fn addRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
             var dir = std.fs.openDirAbsolute(cache_include, std.fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = true }) catch @panic("No emscripten cache. Generate it!");
             dir.close();
 
-            raylib.addIncludePath(.{ .path = cache_include });
+            raylib.addIncludePath(b.path(cache_include));
         },
         else => {
             @panic("Unsupported OS");
