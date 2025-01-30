@@ -25,7 +25,7 @@
 // have all be released under various Creative Commons / Public Domain licenses.
 // See the README for more information and links to the image sources / licenses.
 //
-// This project includes a portion of raylib, specifically v5.0 (commit number ae50bfa).
+// This project includes a portion of raylib, specifically v5.5 (commit number c1ab645).
 //
 // Raylib is created by github user Ray (github handle raysan5) and available at:
 //
