@@ -129,7 +129,7 @@ var photo_indices: [NUMBER_OF_LINES]u32 = undefined;
 var current_text_options:        [4]u32 = undefined;
 
 // Random number generator
-var prng : std.rand.Xoshiro256 = undefined;
+var prng : std.Random.Xoshiro256 = undefined;
 
 // Photo textures.
 var photo_texture_array : [NUMBER_OF_LINES] rl.Texture2D = undefined;
@@ -235,7 +235,7 @@ pub fn main() anyerror!void {
     
     // Set up RNG.
     const seed  = std.time.milliTimestamp();
-    prng        = std.rand.DefaultPrng.init(@intCast(seed));
+    prng        = std.Random.DefaultPrng.init(@intCast(seed));
 
     // Spawn / setup raylib window.    
     rl.InitWindow(initial_screen_width, initial_screen_hidth, WINDOW_TITLE);

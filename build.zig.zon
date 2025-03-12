@@ -1,7 +1,9 @@
 .{
-    .name = "Butterfly-Quiz",
-    .version = "1.1.0",
-    .minimum_zig_version = "0.13.0",
+    .name = .butterfly_quiz,
+    .version = "1.2.0",
+    .minimum_zig_version = "0.14.0",
+    .fingerprint = 0xd255ec797c074f2d, // Changing this has security and trust implications
+        
     .dependencies = .{
        //
        // We've copied in a simplified version of Raylib 5.5 into this project.
@@ -10,7 +12,7 @@
        //
        // https://github.com/raysan5/raylib/releases
        //
-       .raylib_5_5 = .{ .path = "./deps/raylib_5_5" },
+       .raylib_5_5 = .{ .path = "./deps/raylib_5_5_March_2025" },
     },
     .paths = .{
         "build.zig",
